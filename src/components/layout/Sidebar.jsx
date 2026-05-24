@@ -12,7 +12,11 @@ import {
   Settings,
   ChevronRight,
   Terminal,
+  LogOut,
 } from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useToast } from '../ui/Toast';
+
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -28,6 +32,18 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar() {
+  const { user, logout } = useAuthStore();
+  const toast = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('Signed out successfully.');
+    } catch (err) {
+      toast.error(err.message || 'Logout failed.');
+    }
+  };
+
   return (
     <aside className="sidebar">
       {/* Logo / Brand */}
@@ -61,20 +77,58 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Bottom: Settings */}
-      <div className="px-2 pb-3 border-t border-border pt-3 flex-shrink-0">
+      {/* Bottom: Settings & User Profile */}
+      <div className="px-2 pb-3 border-t border-border pt-3 flex-shrink-0 space-y-1">
         <NavLink
           to="/settings"
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
         >
-          <Settings size={16} className="flex-shrink-0" />
+          <Settings size={16} className="flex-shrink-0 text-text-muted" />
           <span>Settings</span>
         </NavLink>
-        <div className="mt-3 mx-1 px-3 py-2.5 rounded-lg bg-bg-elevated border border-border">
-          <p className="text-2xs text-text-muted">Version 1.0.0</p>
-          <p className="text-2xs text-text-muted mt-0.5">
-            {import.meta.env.VITE_APP_NAME ?? 'CommandCenter'}
-          </p>
+
+        {user && (
+          <div className="mt-2 mx-1 p-2 rounded-lg bg-bg-elevated/40 border border-border/60 flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {user.user_metadata?.avatar_url ? (
+                <img
+                  src={user.user_metadata.avatar_url}
+                  alt={user.user_metadata.full_name || 'User'}
+                  className="w-7 h-7 rounded-full border border-border-strong flex-shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-brand-blue/10 border border-brand-blue/30 flex items-center justify-center text-xs font-semibold text-brand-blue flex-shrink-0">
+                  {user.email?.[0]?.toUpperCase() || 'U'}
+                </div>
+              )}
+              <div className="min-w-0 leading-tight">
+                <p className="text-2xs font-medium text-text-primary truncate">
+                  {user.user_metadata?.full_name || 'Authorized User'}
+                </p>
+                <p className="text-3xs text-text-muted truncate mt-0.5">
+                  {user.email}
+                </p>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleLogout}
+              title="Sign Out"
+              className="p-1.5 rounded text-text-muted hover:text-brand-red hover:bg-brand-red/10 transition-colors cursor-pointer flex-shrink-0"
+            >
+              <LogOut size={14} />
+            </button>
+          </div>
+        )}
+
+        <div className="mx-1 px-3 py-2 rounded-lg bg-bg-elevated/20 border border-border/40 mt-1">
+          <div className="flex justify-between items-center text-3xs text-text-muted">
+            <span>Version 1.0.0</span>
+            <span className="opacity-80 font-mono">
+              {import.meta.env.VITE_APP_NAME ?? 'CommandCenter'}
+            </span>
+          </div>
         </div>
       </div>
     </aside>

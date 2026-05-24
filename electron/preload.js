@@ -59,6 +59,13 @@ contextBridge.exposeInMainWorld('electron', {
   },
 
   /**
+   * Google OAuth login helper
+   */
+  auth: {
+    startLoginFlow: (authUrl) => ipcRenderer.invoke('auth:start-login-flow', authUrl),
+  },
+
+  /**
    * Platform info — for UI adjustments
    */
   platform: process.platform,

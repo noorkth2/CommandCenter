@@ -11,25 +11,63 @@ import Automations from './pages/Automations';
 import AIReports from './pages/AIReports';
 import Settings from './pages/Settings';
 import Clients from './pages/Clients';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Setup from './pages/Setup';
-import { checkIsConfigured } from './lib/supabase';
+import Login from './pages/Login';
+import AccessDenied from './pages/AccessDenied';
+import { supabase, checkIsConfigured } from './lib/supabase';
+import { useAuthStore } from './store/useAuthStore';
 import { ToastProvider } from './components/ui/Toast';
 
 export default function App() {
   const [configured] = useState(() => checkIsConfigured());
+  const { session, user, initialize, setSession } = useAuthStore();
+  const [authChecked, setAuthChecked] = useState(false);
 
-  if (!configured) {
+  useEffect(() => {
+    if (!configured) return;
+
+    // Load initial session on startup
+    initialize().then(() => setAuthChecked(true));
+
+    // Listen to changes in auth state dynamically
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [configured, initialize, setSession]);
+
+  const renderContent = () => {
+    if (!configured) {
+      return <Setup />;
+    }
+
+    if (!authChecked) {
+      return (
+        <div className="min-h-screen w-full flex items-center justify-center bg-bg-base">
+          <div className="w-6 h-6 border-2 border-border-strong border-t-brand-blue rounded-full animate-spin" />
+        </div>
+      );
+    }
+
+    if (!session) {
+      return <Login />;
+    }
+
+    const ALLOWED_EMAILS = [
+      'kayastha.noor1100@gmail.com',
+      'niroj.mahrjan@gmail.com'
+    ];
+
+    const isAuthorized = user && ALLOWED_EMAILS.includes(user.email);
+    if (!isAuthorized) {
+      return <AccessDenied />;
+    }
+
     return (
-      <ToastProvider>
-        <Setup />
-      </ToastProvider>
-    );
-  }
-
-
-  return (
-    <ToastProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
@@ -48,6 +86,12 @@ export default function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+    );
+  };
+
+  return (
+    <ToastProvider>
+      {renderContent()}
     </ToastProvider>
   );
 }

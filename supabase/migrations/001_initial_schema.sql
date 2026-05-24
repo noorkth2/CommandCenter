@@ -20,6 +20,7 @@ create table public.projects (
     check (category in ('fyp', 'coursework', 'client', 'personal')),
   tech_stack text[] default '{}',
   deadline date,
+  running boolean default true,
   description text,
   notes text,
   created_at timestamptz default now(),

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Dropdown menu component.
@@ -12,38 +13,89 @@ import { useEffect, useRef, useState } from 'react';
  */
 export default function Dropdown({ trigger, items = [], align = 'right' }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+  const [coords, setCoords] = useState(null);
 
+  /** Computes and sets menu coordinates from the trigger element's bounding rect. */
+  const computeCoords = (el) => {
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    if (align === 'right') {
+      return { top: rect.bottom, right: window.innerWidth - rect.right };
+    }
+    return { top: rect.bottom, left: rect.left };
+  };
+
+  const handleTriggerClick = () => {
+    if (open) {
+      setOpen(false);
+      setCoords(null);
+    } else {
+      // Compute coords synchronously BEFORE setting open=true so the first
+      // render of the portal already has the correct position — no flicker.
+      const c = computeCoords(triggerRef.current);
+      setCoords(c);
+      setOpen(true);
+    }
+  };
+
+  // Keep coords in sync when the user scrolls or resizes the window.
+  useEffect(() => {
+    if (!open) return;
+    const update = () => setCoords(computeCoords(triggerRef.current));
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open, align]);
+
+  // Close on outside click.
   useEffect(() => {
     if (!open) return;
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (triggerRef.current && triggerRef.current.contains(e.target)) return;
+      if (menuRef.current && menuRef.current.contains(e.target)) return;
+      setOpen(false);
+      setCoords(null);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  // Close on Escape.
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => { if (e.key === 'Escape') setOpen(false); };
+    const handler = (e) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        setCoords(null);
+      }
+    };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [open]);
 
   return (
-    <div ref={ref} className="relative inline-block">
-      <div onClick={() => setOpen((v) => !v)} className="cursor-pointer">
+    <>
+      <div ref={triggerRef} onClick={handleTriggerClick} className="cursor-pointer inline-block">
         {trigger}
       </div>
 
-      {open && (
+      {open && coords && createPortal(
         <div
-          className={`
-            absolute z-50 mt-1 min-w-[160px] py-1
-            bg-bg-elevated border border-border-strong rounded-lg shadow-overlay
-            animate-scale-in
-            ${align === 'right' ? 'right-0' : 'left-0'}
-          `}
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${coords.top + 4}px`,
+            ...(align === 'right'
+              ? { right: `${coords.right}px`, transformOrigin: 'top right' }
+              : { left: `${coords.left}px`, transformOrigin: 'top left' }
+            ),
+          }}
+          className="z-[9999] min-w-[160px] py-1 bg-bg-elevated border border-border-strong rounded-lg shadow-overlay animate-scale-in"
           role="menu"
         >
           {items.map((item, idx) => {
@@ -66,6 +118,7 @@ export default function Dropdown({ trigger, items = [], align = 'right' }) {
                   if (!item.disabled) {
                     item.onClick();
                     setOpen(false);
+                    setCoords(null);
                   }
                 }}
                 role="menuitem"
@@ -77,8 +130,11 @@ export default function Dropdown({ trigger, items = [], align = 'right' }) {
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
+
+

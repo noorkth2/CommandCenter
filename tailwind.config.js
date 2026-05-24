@@ -32,6 +32,7 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       fontSize: {
+        '3xs': '10px',
         '2xs': '11px',
         xs: '12px',
         sm: '13px',

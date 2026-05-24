@@ -28,8 +28,9 @@ const isConfigured = checkIsConfigured();
 export const supabase = isConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        persistSession: false,
-        autoRefreshToken: false,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
       },
       realtime: {
         params: {

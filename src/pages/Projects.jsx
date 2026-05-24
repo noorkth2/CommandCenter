@@ -34,6 +34,7 @@ const schema = z.object({
   description: z.string().optional(),
   notes: z.string().optional(),
   client_id: z.string().uuid('Invalid client selection').optional().or(z.literal('')),
+  running: z.boolean().optional(),
 });
 
 const toOptions = (arr, labels) => arr.map((v) => ({ value: v, label: labels[v] ?? v }));
@@ -55,7 +56,7 @@ export default function Projects() {
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { status: 'active', priority: 'p2', tech_stack: '', category: '', client_id: '' },
+    defaultValues: { status: 'active', priority: 'p2', tech_stack: '', category: '', name: '', description: '', notes: '', deadline: '', client_id: '', running: true },
   });
 
   const loading = projectsLoading;
@@ -78,6 +79,7 @@ export default function Projects() {
       notes: '',
       deadline: '',
       client_id: '',
+      running: true,
     });
     setPanelOpen(true);
   };
@@ -94,6 +96,7 @@ export default function Projects() {
       description: project.description ?? '',
       notes: project.notes ?? '',
       client_id: project.client_id ?? '',
+      running: project.running ?? true,
     });
     setPanelOpen(true);
   }, [reset]);
@@ -106,6 +109,7 @@ export default function Projects() {
         tech_stack: data.tech_stack ? data.tech_stack.split(',').map(t => t.trim()).filter(Boolean) : [],
         deadline: data.deadline || null,
         client_id: data.client_id || null,
+        running: data.running !== undefined ? data.running : true,
       };
       if (editing) {
         await update(editing.id, payload);
@@ -224,59 +228,71 @@ export default function Projects() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Name & Client Hierarchy</th>
+                  <th>Name &amp; Hierarchy</th>
                   <th>Status</th>
                   <th>Priority</th>
                   <th>Category</th>
-                  <th>Tech Stack</th>
-                  <th>Deadline</th>
-                  <th className="w-12"></th>
+                  <th>Running</th>
+                  <th className="w-10"></th>
                 </tr>
               </thead>
               <tbody>
                 {filteredProjects.map((p) => (
                   <tr key={p.id} className="cursor-pointer" onClick={() => openEdit(p)}>
-                    <td>
-                      <div className="flex flex-col gap-0.5">
+                    {/* Name — hierarchy, tech stack and deadline all inline */}
+                    <td className="max-w-sm">
+                      <div className="flex flex-col gap-1">
                         <span className="font-medium text-text-primary">{p.name}</span>
                         {p.clients ? (
                           <span className="text-3xs text-brand-blue font-medium tracking-wide uppercase">
                             {p.clients.products?.name} • {p.clients.name}
                           </span>
                         ) : (
-                          <span className="text-3xs text-text-muted italic">No Client Assigned</span>
+                          <span className="text-3xs text-text-muted italic">No client assigned</span>
                         )}
-                        {p.description && (
-                          <p className="text-xs text-text-muted truncate max-w-xs mt-0.5">{p.description}</p>
+                        {(p.tech_stack ?? []).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {(p.tech_stack ?? []).slice(0, 4).map((t) => (
+                              <span key={t} className="text-3xs px-1.5 py-0.5 rounded bg-bg-hover text-text-muted border border-border">
+                                {t}
+                              </span>
+                            ))}
+                            {(p.tech_stack ?? []).length > 4 && (
+                              <span className="text-3xs text-text-muted">+{p.tech_stack.length - 4}</span>
+                            )}
+                          </div>
+                        )}
+                        {p.deadline && (
+                          <span className="text-3xs text-text-muted">
+                            📅 {format(new Date(p.deadline), 'MMM d, yyyy')}
+                          </span>
                         )}
                       </div>
                     </td>
                     <td><StatusBadge status={p.status} /></td>
                     <td><PriorityBadge priority={p.priority} /></td>
                     <td>
-                      {p.category ? (
-                        <span className="text-xs text-text-secondary capitalize">
-                          {PROJECT_CATEGORY_LABELS[p.category] ?? p.category}
-                        </span>
-                      ) : <span className="text-text-muted text-xs">—</span>}
+                      {p.category
+                        ? <span className="text-xs text-text-secondary">{PROJECT_CATEGORY_LABELS[p.category] ?? p.category}</span>
+                        : <span className="text-text-muted text-xs">—</span>}
                     </td>
-                    <td>
-                      <div className="flex flex-wrap gap-1">
-                        {(p.tech_stack ?? []).slice(0, 3).map((t) => (
-                          <span key={t} className="text-xs px-1.5 py-0.5 rounded bg-bg-hover text-text-secondary border border-border">
-                            {t}
-                          </span>
-                        ))}
-                        {(p.tech_stack ?? []).length > 3 && (
-                          <span className="text-xs text-text-muted">+{p.tech_stack.length - 3}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      {p.deadline
-                        ? <span className="text-xs text-text-secondary">{format(new Date(p.deadline), 'MMM d, yyyy')}</span>
-                        : <span className="text-text-muted text-xs">—</span>
-                      }
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <button
+                        title={p.running ? 'Click to pause' : 'Click to mark as running'}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await update(p.id, { running: !p.running });
+                          toast.success('Running status updated');
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-2xs font-medium border transition-colors duration-150 cursor-pointer ${
+                          p.running
+                            ? 'bg-brand-green/10 border-brand-green/30 text-brand-green hover:bg-brand-green/20'
+                            : 'bg-bg-hover border-border text-text-muted hover:border-border-strong'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${p.running ? 'bg-brand-green' : 'bg-text-muted'}`} />
+                        {p.running ? 'Running' : 'Paused'}
+                      </button>
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <Dropdown
@@ -334,9 +350,26 @@ export default function Projects() {
             <Select label="Priority" options={toOptions(PROJECT_PRIORITIES, PROJECT_PRIORITY_LABELS)} error={errors.priority?.message} {...register('priority')} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-[1fr_140px_auto] gap-4 items-end">
             <Select label="Category" placeholder="Select category" options={toOptions(PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS)} {...register('category')} />
-            <Input label="Deadline" type="date" {...register('deadline')} />
+            <div className="form-group">
+              <label className="form-label">Deadline</label>
+              <input type="date" className="input-base text-xs h-8" {...register('deadline')} />
+            </div>
+            {/* Running toggle */}
+            <div className="form-group">
+              <label className="form-label">Running</label>
+              <label className="flex items-center gap-2 h-8 cursor-pointer select-none">
+                <input type="checkbox" className="sr-only peer" {...register('running')} />
+                <div className="relative w-9 h-5 bg-bg-hover rounded-full border border-border
+                  peer-checked:bg-brand-blue peer-checked:border-brand-blue
+                  after:content-[''] after:absolute after:top-0.5 after:left-0.5
+                  after:bg-white after:rounded-full after:h-4 after:w-4
+                  after:transition-all peer-checked:after:translate-x-4
+                  transition-colors duration-150" />
+                <span className="text-xs text-text-secondary peer-checked:text-brand-blue">On</span>
+              </label>
+            </div>
           </div>
 
           <Input

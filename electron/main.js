@@ -177,6 +177,19 @@ function registerIpcHandlers() {
       return { data: null, error: err.message };
     }
   });
+
+  // ── Google OAuth Login ─────────────────────────────────────────────
+  const { startAuthServer } = require('./auth');
+  ipcMain.handle('auth:start-login-flow', async (_event, authUrl) => {
+    try {
+      const authPromise = startAuthServer();
+      await shell.openExternal(authUrl);
+      const tokens = await authPromise;
+      return { data: tokens, error: null };
+    } catch (err) {
+      return { data: null, error: err.message };
+    }
+  });
 }
 
 // Prevent multiple instances
