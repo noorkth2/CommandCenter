@@ -163,7 +163,7 @@ function registerIpcHandlers() {
     const { getSupabaseClient } = require('./ipc/supabase.ipc');
     try {
       const client = getSupabaseClient();
-      const tables = ['projects', 'issues', 'qa_items', 'deployments', 'sprints', 'ai_reports', 'automations'];
+      const tables = ['products', 'clients', 'projects', 'issues', 'qa_items', 'deployments', 'sprints', 'ai_reports', 'automations'];
       const exported = {};
       for (const table of tables) {
         const { data, error } = await client.from(table).select('*');

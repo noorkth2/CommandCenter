@@ -1,6 +1,8 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
+  Boxes,
+  Users,
   FolderKanban,
   CircleDot,
   TestTube2,
@@ -14,6 +16,8 @@ import {
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/products', label: 'Products', icon: Boxes },
+  { path: '/clients', label: 'Clients', icon: Users },
   { path: '/projects', label: 'Projects', icon: FolderKanban },
   { path: '/issues', label: 'Issues', icon: CircleDot },
   { path: '/qa', label: 'QA Tracker', icon: TestTube2 },

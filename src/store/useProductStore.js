@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 
-export const useProjectStore = create((set, get) => ({
-  projects: [],
+export const useProductStore = create((set, get) => ({
+  products: [],
   loading: false,
   error: null,
 
@@ -10,11 +10,11 @@ export const useProjectStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const { data, error } = await supabase
-        .from('projects')
-        .select('*, clients(id, name, product_id, products(id, name))')
-        .order('created_at', { ascending: false });
+        .from('products')
+        .select('*')
+        .order('name', { ascending: true });
       if (error) throw error;
-      set({ projects: data ?? [], loading: false });
+      set({ products: data ?? [], loading: false });
     } catch (err) {
       set({ error: err.message, loading: false });
     }
@@ -22,34 +22,34 @@ export const useProjectStore = create((set, get) => ({
 
   create: async (payload) => {
     const { data, error } = await supabase
-      .from('projects')
+      .from('products')
       .insert(payload)
-      .select('*, clients(id, name, product_id, products(id, name))')
+      .select()
       .single();
     if (error) throw new Error(error.message);
-    set((s) => ({ projects: [data, ...s.projects] }));
+    set((s) => ({ products: [...s.products, data].sort((a, b) => a.name.localeCompare(b.name)) }));
     return data;
   },
 
   update: async (id, payload) => {
     const { data, error } = await supabase
-      .from('projects')
+      .from('products')
       .update(payload)
       .eq('id', id)
-      .select('*, clients(id, name, product_id, products(id, name))')
+      .select()
       .single();
     if (error) throw new Error(error.message);
     set((s) => ({
-      projects: s.projects.map((p) => (p.id === id ? data : p)),
+      products: s.products.map((p) => (p.id === id ? data : p)).sort((a, b) => a.name.localeCompare(b.name)),
     }));
     return data;
   },
 
   delete: async (id) => {
-    const { error } = await supabase.from('projects').delete().eq('id', id);
+    const { error } = await supabase.from('products').delete().eq('id', id);
     if (error) throw new Error(error.message);
-    set((s) => ({ projects: s.projects.filter((p) => p.id !== id) }));
+    set((s) => ({ products: s.products.filter((p) => p.id !== id) }));
   },
 
-  getById: (id) => get().projects.find((p) => p.id === id) ?? null,
+  getById: (id) => get().products.find((p) => p.id === id) ?? null,
 }));

@@ -2,10 +2,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, ExternalLink, MoreHorizontal, FolderKanban } from 'lucide-react';
+import { Plus, Pencil, Trash2, FolderKanban, MoreHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { useProjectStore } from '../store/useProjectStore';
+import { useClientStore } from '../store/useClientStore';
+import { useProductStore } from '../store/useProductStore';
 import { useToast } from '../components/ui/Toast';
 import Button from '../components/ui/Button';
 import Dialog from '../components/ui/Dialog';
@@ -31,13 +33,15 @@ const schema = z.object({
   deadline: z.string().optional(),
   description: z.string().optional(),
   notes: z.string().optional(),
+  client_id: z.string().uuid('Invalid client selection').optional().or(z.literal('')),
 });
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 const toOptions = (arr, labels) => arr.map((v) => ({ value: v, label: labels[v] ?? v }));
 
 export default function Projects() {
-  const { projects, loading, fetch, create, update, delete: deleteProject } = useProjectStore();
+  const { projects, loading: projectsLoading, fetch: fetchProjects, create, update, delete: deleteProject } = useProjectStore();
+  const { clients, fetch: fetchClients } = useClientStore();
+  const { products, fetch: fetchProducts } = useProductStore();
   const toast = useToast();
 
   const [panelOpen, setPanelOpen] = useState(false);
@@ -45,16 +49,36 @@ export default function Projects() {
   const [confirmId, setConfirmId] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm({
+  // Filters State
+  const [filterProduct, setFilterProduct] = useState('all');
+  const [filterClient, setFilterClient] = useState('all');
+
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { status: 'active', priority: 'p2', tech_stack: '', category: '' },
+    defaultValues: { status: 'active', priority: 'p2', tech_stack: '', category: '', client_id: '' },
   });
 
-  useEffect(() => { fetch(); }, [fetch]);
+  const loading = projectsLoading;
+
+  useEffect(() => {
+    fetchProjects();
+    fetchClients();
+    fetchProducts();
+  }, []);
 
   const openCreate = () => {
     setEditing(null);
-    reset({ status: 'active', priority: 'p2', tech_stack: '', category: '', name: '', description: '', notes: '', deadline: '' });
+    reset({
+      status: 'active',
+      priority: 'p2',
+      tech_stack: '',
+      category: '',
+      name: '',
+      description: '',
+      notes: '',
+      deadline: '',
+      client_id: '',
+    });
     setPanelOpen(true);
   };
 
@@ -69,6 +93,7 @@ export default function Projects() {
       deadline: project.deadline ?? '',
       description: project.description ?? '',
       notes: project.notes ?? '',
+      client_id: project.client_id ?? '',
     });
     setPanelOpen(true);
   }, [reset]);
@@ -80,6 +105,7 @@ export default function Projects() {
         category: data.category || null,
         tech_stack: data.tech_stack ? data.tech_stack.split(',').map(t => t.trim()).filter(Boolean) : [],
         deadline: data.deadline || null,
+        client_id: data.client_id || null,
       };
       if (editing) {
         await update(editing.id, payload);
@@ -108,36 +134,97 @@ export default function Projects() {
     }
   };
 
+  // Filter project records based on selectors
+  const filteredProjects = projects.filter((p) => {
+    if (filterProduct !== 'all') {
+      if (!p.clients || p.clients.product_id !== filterProduct) return false;
+    }
+    if (filterClient !== 'all') {
+      if (p.client_id !== filterClient) return false;
+    }
+    return true;
+  });
+
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in space-y-6 pb-12">
       {/* Header */}
       <div className="section-header">
         <div>
           <h2 className="section-title">Projects</h2>
-          <p className="section-subtitle">{projects.length} total</p>
+          <p className="section-subtitle">{filteredProjects.length} visible ({projects.length} total)</p>
         </div>
         <Button variant="primary" size="sm" onClick={openCreate}>
           <Plus size={14} /> New Project
         </Button>
       </div>
 
+      {/* Filter Bar */}
+      <div className="flex flex-wrap items-center gap-3 p-4 card">
+        <span className="text-2xs font-semibold text-text-muted uppercase tracking-wider">Filter Hierarchy:</span>
+        <div className="w-48">
+          <select
+            value={filterProduct}
+            onChange={(e) => {
+              setFilterProduct(e.target.value);
+              setFilterClient('all');
+            }}
+            className="input-base text-xs py-1.5 h-auto cursor-pointer"
+          >
+            <option value="all">All Products</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="w-48">
+          <select
+            value={filterClient}
+            onChange={(e) => setFilterClient(e.target.value)}
+            className="input-base text-xs py-1.5 h-auto cursor-pointer"
+            disabled={filterProduct !== 'all' && clients.filter(c => c.product_id === filterProduct).length === 0}
+          >
+            <option value="all">All Clients</option>
+            {clients
+              .filter((c) => filterProduct === 'all' || c.product_id === filterProduct)
+              .map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+          </select>
+        </div>
+        {(filterProduct !== 'all' || filterClient !== 'all') && (
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => {
+              setFilterProduct('all');
+              setFilterClient('all');
+            }}
+            className="text-brand-red hover:bg-brand-red/10 h-7"
+          >
+            Clear Filters
+          </Button>
+        )}
+      </div>
+
       {/* Table */}
       <div className="card overflow-hidden">
         {loading ? (
           <ProjectsSkeleton />
-        ) : projects.length === 0 ? (
+        ) : filteredProjects.length === 0 ? (
           <div className="empty-state">
             <FolderKanban size={40} className="empty-state-icon" />
-            <p className="empty-state-title">No projects yet</p>
-            <p className="empty-state-desc">Create your first project to start tracking work.</p>
-            <Button variant="primary" size="sm" onClick={openCreate}><Plus size={14} /> New Project</Button>
+            <p className="empty-state-title">No matching projects found</p>
+            <p className="empty-state-desc">Try resetting your filter options or add a new project.</p>
+            <Button variant="primary" size="sm" onClick={openCreate}>
+              <Plus size={14} /> New Project
+            </Button>
           </div>
         ) : (
           <div className="table-wrapper">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>Name & Client Hierarchy</th>
                   <th>Status</th>
                   <th>Priority</th>
                   <th>Category</th>
@@ -147,13 +234,22 @@ export default function Projects() {
                 </tr>
               </thead>
               <tbody>
-                {projects.map((p) => (
+                {filteredProjects.map((p) => (
                   <tr key={p.id} className="cursor-pointer" onClick={() => openEdit(p)}>
                     <td>
-                      <span className="font-medium text-text-primary">{p.name}</span>
-                      {p.description && (
-                        <p className="text-xs text-text-muted mt-0.5 truncate max-w-xs">{p.description}</p>
-                      )}
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium text-text-primary">{p.name}</span>
+                        {p.clients ? (
+                          <span className="text-3xs text-brand-blue font-medium tracking-wide uppercase">
+                            {p.clients.products?.name} • {p.clients.name}
+                          </span>
+                        ) : (
+                          <span className="text-3xs text-text-muted italic">No Client Assigned</span>
+                        )}
+                        {p.description && (
+                          <p className="text-xs text-text-muted truncate max-w-xs mt-0.5">{p.description}</p>
+                        )}
+                      </div>
                     </td>
                     <td><StatusBadge status={p.status} /></td>
                     <td><PriorityBadge priority={p.priority} /></td>
@@ -221,6 +317,17 @@ export default function Projects() {
       >
         <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
           <Input label="Project Name" placeholder="e.g. Payment Gateway Integration" required error={errors.name?.message} {...register('name')} />
+
+          <Select
+            label="Client"
+            placeholder="Select client (optional)"
+            options={clients.map((c) => ({
+              value: c.id,
+              label: `${c.name} (${c.products?.name ?? 'No Product Line'})`
+            }))}
+            error={errors.client_id?.message}
+            {...register('client_id')}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <Select label="Status" options={toOptions(PROJECT_STATUSES, PROJECT_STATUS_LABELS)} error={errors.status?.message} {...register('status')} />
