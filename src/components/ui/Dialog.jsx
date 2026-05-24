@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import Button from './Button';
 
@@ -31,7 +32,7 @@ export default function Dialog({ open, onClose, title, subtitle, children, foote
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -66,6 +67,7 @@ export default function Dialog({ open, onClose, title, subtitle, children, foote
         {/* Footer */}
         {footer && <div className="slide-over-footer">{footer}</div>}
       </div>
-    </>
+    </>,
+    document.body
   );
 }

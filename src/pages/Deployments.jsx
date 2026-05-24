@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -313,7 +314,7 @@ export default function Deployments() {
       </Dialog>
 
       {/* Email preview modal */}
-      {emailModalOpen && (
+      {emailModalOpen && createPortal(
         <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
           <div className="fixed inset-0 bg-black/60 animate-fade-in" onClick={() => setEmailModalOpen(false)} />
           <div className="relative w-full max-w-lg bg-bg-elevated border border-border-strong rounded-xl shadow-overlay p-6 animate-scale-in z-10">
@@ -328,7 +329,8 @@ export default function Deployments() {
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <ConfirmDialog
