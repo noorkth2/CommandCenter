@@ -226,7 +226,7 @@ export default function Clients() {
                       const isOpen = expanded[client.id];
 
                       return (
-                        <div key={client.id} className="card overflow-hidden">
+                        <div key={client.id} className="card">
                           {/* Client Row */}
                           <div
                             className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-bg-hover transition-colors group"
@@ -273,7 +273,7 @@ export default function Clients() {
                           {isOpen && (
                             <div className="border-t border-border">
                               {clientProjects.length === 0 ? (
-                                <div className="px-4 py-3 flex items-center justify-between">
+                                <div className="px-4 py-3 flex items-center justify-between rounded-b-lg">
                                   <p className="text-xs text-text-muted">No projects linked to this client</p>
                                   <Button
                                     variant="ghost"
@@ -286,11 +286,13 @@ export default function Clients() {
                                 </div>
                               ) : (
                                 <div className="divide-y divide-border">
-                                  {clientProjects.map((proj) => (
+                                  {clientProjects.map((proj, pIdx) => (
                                     <div
                                       key={proj.id}
                                       onClick={() => navigate('/projects')}
-                                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-bg-hover transition-colors cursor-pointer"
+                                      className={`flex items-center gap-3 px-4 py-2.5 hover:bg-bg-hover transition-colors cursor-pointer ${
+                                        pIdx === clientProjects.length - 1 ? 'rounded-b-lg' : ''
+                                      }`}
                                     >
                                       <FolderKanban size={13} className="text-text-muted flex-shrink-0" />
                                       <span className="text-xs text-text-primary flex-1 truncate">

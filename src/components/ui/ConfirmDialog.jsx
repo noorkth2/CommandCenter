@@ -40,16 +40,17 @@ export default function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <>
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
+      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-fade-in"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
+      {/* Dialog Panel */}
       <div
-        className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                   w-full max-w-sm bg-bg-elevated border border-border-strong rounded-xl
-                   shadow-overlay p-6 animate-scale-in"
+        className="relative w-full max-w-sm bg-bg-elevated border border-border-strong rounded-xl
+                   shadow-overlay p-6 animate-scale-in z-10"
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
@@ -84,6 +85,6 @@ export default function ConfirmDialog({
           </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -314,9 +314,9 @@ export default function Deployments() {
 
       {/* Email preview modal */}
       {emailModalOpen && (
-        <>
-          <div className="fixed inset-0 bg-black/60 z-50 animate-fade-in" onClick={() => setEmailModalOpen(false)} />
-          <div className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-bg-elevated border border-border-strong rounded-xl shadow-overlay p-6 animate-scale-in">
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black/60 animate-fade-in" onClick={() => setEmailModalOpen(false)} />
+          <div className="relative w-full max-w-lg bg-bg-elevated border border-border-strong rounded-xl shadow-overlay p-6 animate-scale-in z-10">
             <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2"><Mail size={15} /> Email Preview</h3>
             <div className="bg-bg-base border border-border rounded p-4 text-sm text-text-secondary whitespace-pre-wrap max-h-64 overflow-y-auto mb-4">
               {emailPreview}
@@ -328,7 +328,7 @@ export default function Deployments() {
               </Button>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       <ConfirmDialog
