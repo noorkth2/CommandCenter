@@ -42,7 +42,7 @@ async function handleAiGenerate(prompt, type) {
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2048,
       system:
-        'You are a senior software engineering assistant embedded in a DevOps command center. ' +
+        'You are a senior Product manager assistant embedded in a PM command center. ' +
         'You write professional, factual, concise technical documentation. ' +
         'Do not add filler phrases, pleasantries, or unnecessary caveats. ' +
         'Output only the requested content.',

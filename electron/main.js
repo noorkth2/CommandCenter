@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Load .env file for development
-if (process.env.NODE_ENV !== 'production') {
+if (!app.isPackaged) {
   try {
     const envPath = path.join(__dirname, '..', '.env');
     if (fs.existsSync(envPath)) {
@@ -25,7 +25,7 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
-const isDev = process.env.NODE_ENV !== 'production';
+const isDev = !app.isPackaged;
 
 let mainWindow = null;
 
@@ -43,7 +43,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false, // Required for preload to access Node.js APIs
-      webSecurity: true,
+      webSecurity: false, // Required for file:// protocol to load local assets
     },
     show: false, // Show after ready-to-show to prevent blank flash
   });
@@ -56,9 +56,37 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
 
+  // Primary show trigger — fires when first paint is ready
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     mainWindow.focus();
+  });
+
+  // Fallback: force show after page finishes loading in case ready-to-show is delayed
+  mainWindow.webContents.once('did-finish-load', () => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  // Handle renderer load failures (e.g. file not found, network error)
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[main] Renderer failed to load: ${errorCode} — ${errorDescription} (${validatedURL})`);
+    // Force show the window even on failure so user sees something
+    if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  });
+
+  // Handle renderer process crash
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[main] Renderer process gone:', details.reason, details.exitCode);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (!mainWindow.isVisible()) mainWindow.show();
+      // Reload the app on crash
+      mainWindow.reload();
+    }
   });
 
   mainWindow.on('closed', () => {
@@ -69,6 +97,19 @@ function createWindow() {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
+  });
+
+  // Toggle DevTools with F12 or Cmd+Option+I (macOS) / Ctrl+Shift+I (Windows/Linux) in all builds
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown') {
+      const isF12 = input.key === 'F12';
+      const isCmdOptI = process.platform === 'darwin' && input.meta && input.alt && input.key.toLowerCase() === 'i';
+      const isCtrlShiftI = process.platform !== 'darwin' && input.control && input.shift && input.key.toLowerCase() === 'i';
+      if (isF12 || isCmdOptI || isCtrlShiftI) {
+        mainWindow.webContents.toggleDevTools();
+        event.preventDefault();
+      }
+    }
   });
 }
 
@@ -95,7 +136,9 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin' || !app.isPackaged) {
+    app.quit();
+  }
 });
 
 // =====================
@@ -201,6 +244,8 @@ if (!gotTheLock) {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
+    } else {
+      createWindow();
     }
   });
 }

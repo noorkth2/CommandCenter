@@ -124,9 +124,15 @@ export default function Dashboard() {
           <Button variant="secondary" size="sm" onClick={() => navigate('/issues')}>
             View Board
           </Button>
-          <Button variant="primary" size="sm" onClick={() => navigate('/sprints')}>
-            Start Sprint
-          </Button>
+          {activeSprint ? (
+            <Button variant="primary" size="sm" onClick={() => navigate('/sprints')}>
+              Active Sprint
+            </Button>
+          ) : (
+            <Button variant="primary" size="sm" onClick={() => navigate('/sprints')}>
+              Start Sprint
+            </Button>
+          )}
         </div>
       </div>
 

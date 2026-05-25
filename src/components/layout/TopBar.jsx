@@ -3,7 +3,7 @@ import { Bell, Search } from 'lucide-react';
 import Button from '../ui/Button';
 
 const PAGE_TITLES = {
-  '/dashboard': { title: 'Dashboard', subtitle: 'Overview of your DevOps operations' },
+  '/dashboard': { title: 'Dashboard', subtitle: 'Overview of your PM operations' },
   '/projects': { title: 'Projects', subtitle: 'Manage your active development projects' },
   '/issues': { title: 'Issues', subtitle: 'Track bugs, tasks, and feature requests' },
   '/qa': { title: 'QA Tracker', subtitle: 'Quality assurance and test management' },

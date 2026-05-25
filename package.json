@@ -1,7 +1,7 @@
 {
   "name": "commandcenter",
   "version": "1.0.0",
-  "description": "DevOps Command Center — unified productivity tool for solo developers",
+  "description": "PM Command Center — unified productivity tool for teams",
   "main": "electron/main.js",
   "homepage": "./",
   "scripts": {
@@ -9,7 +9,7 @@
     "dev:vite": "vite",
     "dev:electron": "wait-on http://localhost:5173 && electron .",
     "build": "vite build && electron-builder",
-    "build:mac": "vite build && electron-builder --mac",
+    "build:mac": "vite build && electron-builder --mac --x64 --arm64",
     "build:win": "vite build && electron-builder --win",
     "build:linux": "vite build && electron-builder --linux",
     "preview": "vite preview"
@@ -57,7 +57,15 @@
       "package.json"
     ],
     "mac": {
-      "target": "dmg",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
       "category": "public.app-category.developer-tools"
     },
     "win": {

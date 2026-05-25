@@ -57,7 +57,7 @@ export default function Sidebar() {
           <span className="text-sm font-semibold text-text-primary tracking-tight">
             CommandCenter
           </span>
-          <p className="text-2xs text-text-muted leading-none mt-0.5">DevOps Hub</p>
+          <p className="text-2xs text-text-muted leading-none mt-0.5">PM Hub</p>
         </div>
       </div>
 

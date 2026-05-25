@@ -29,8 +29,8 @@ export default function Login() {
       <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-brand-purple/10 blur-[150px] pointer-events-none animate-pulse duration-[8000ms]" />
 
       {/* Grid lines styling overlay */}
-      <div 
-        className="absolute inset-0 opacity-[0.02] pointer-events-none" 
+      <div
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
         style={{
           backgroundImage: 'radial-gradient(rgba(255,255,255,0.15) 1px, transparent 0)',
           backgroundSize: '24px 24px'
@@ -54,7 +54,7 @@ export default function Login() {
             </span>
           </h1>
           <p className="text-xs text-text-secondary mb-8 max-w-[280px] mx-auto leading-relaxed">
-            The premium desktop DevOps hub. Access is restricted to authorized email accounts.
+            The premium desktop PM hub. Access is restricted to authorized email accounts.
           </p>
 
           {/* Login Button */}
@@ -71,7 +71,7 @@ export default function Login() {
           >
             {/* Hover light sweep effect */}
             <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-[-25deg] translate-x-[-150%] group-hover:translate-x-[250%] transition-transform duration-[1200ms] ease-out" />
-            
+
             {isLoggingIn ? (
               <div className="w-4 h-4 border-2 border-text-muted border-t-brand-blue rounded-full animate-spin" />
             ) : (
@@ -94,7 +94,7 @@ export default function Login() {
                 />
               </svg>
             )}
-            
+
             <span>{isLoggingIn ? 'Connecting...' : 'Sign in with Google'}</span>
           </button>
         </div>
