@@ -277,7 +277,7 @@ Sign off as: "Engineering Team"
   /**
    * Manually triggers an automation by ID (used from the UI for testing).
    */
-  async manualTrigger(automationId) {
+  async manualTrigger(automationId, data = {}) {
     try {
       const { data: automation, error } = await this.client
         .from('automations')
@@ -289,7 +289,7 @@ Sign off as: "Engineering Team"
         return { success: false, error: 'Automation not found' };
       }
 
-      await this.executeAction(automation, {});
+      await this.executeAction(automation, data);
       await this.recordTrigger(automationId);
       return { success: true, error: null };
     } catch (err) {

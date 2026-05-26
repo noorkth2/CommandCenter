@@ -38,7 +38,7 @@ contextBridge.exposeInMainWorld('electron', {
    * Automation — manually trigger an automation by ID (for testing in UI)
    */
   automation: {
-    trigger: (id) => ipcRenderer.invoke('automation:trigger', id),
+    trigger: (id, data) => ipcRenderer.invoke('automation:trigger', id, data),
   },
 
   /**

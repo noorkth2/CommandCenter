@@ -124,7 +124,7 @@ export default function Sidebar() {
 
         <div className="mx-1 px-3 py-2 rounded-lg bg-bg-elevated/20 border border-border/40 mt-1">
           <div className="flex justify-between items-center text-3xs text-text-muted">
-            <span>Version 1.0.0</span>
+            <span>Version {import.meta.env.VITE_APP_VERSION || '1.0.0'}</span>
             <span className="opacity-80 font-mono">
               {import.meta.env.VITE_APP_NAME ?? 'CommandCenter'}
             </span>

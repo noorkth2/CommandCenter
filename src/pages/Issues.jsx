@@ -25,7 +25,7 @@ import AIGenerateButton from '../components/shared/AIGenerateButton';
 import Dropdown from '../components/ui/Dropdown';
 import {
   ISSUE_STATUSES, ISSUE_STATUS_LABELS, ISSUE_PRIORITIES,
-  ISSUE_TEAMS, ISSUE_ENVIRONMENTS, PROJECT_PRIORITY_LABELS,
+  ISSUE_TEAMS, ISSUE_TEAM_LABELS, ISSUE_ENVIRONMENTS, PROJECT_PRIORITY_LABELS,
 } from '../lib/constants';
 
 // ─── Kanban columns definition ────────────────────────────────────────────────
@@ -437,7 +437,7 @@ export default function Issues() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Select label="Team" placeholder="Select team" options={toOptions(ISSUE_TEAMS, { backend: 'Backend', frontend: 'Frontend', qa: 'QA', ops: 'Ops' })} {...register('team')} />
+            <Select label="Team" placeholder="Select team" options={toOptions(ISSUE_TEAMS, ISSUE_TEAM_LABELS)} {...register('team')} />
             <Select label="Environment" placeholder="Select environment" options={toOptions(ISSUE_ENVIRONMENTS, { local: 'Local', staging: 'Staging', production: 'Production' })} {...register('environment')} />
           </div>
 

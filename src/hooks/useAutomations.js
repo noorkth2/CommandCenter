@@ -35,7 +35,7 @@ export function useAutomations() {
 
         if (window.electron?.automation?.trigger) {
           // Pass the trigger data through IPC for execution
-          await window.electron.automation.trigger(automation.id);
+          await window.electron.automation.trigger(automation.id, triggerData);
         }
       }
     } catch (err) {

@@ -165,9 +165,9 @@ function registerIpcHandlers() {
 
   // ── Automation manual trigger ────────────────────────────────────
   const { AutomationEngine } = require('./automations');
-  ipcMain.handle('automation:trigger', async (_event, automationId) => {
+  ipcMain.handle('automation:trigger', async (_event, automationId, data) => {
     const engine = new AutomationEngine();
-    return engine.manualTrigger(automationId);
+    return engine.manualTrigger(automationId, data);
   });
 
   // ── Settings ─────────────────────────────────────────────────────

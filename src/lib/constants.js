@@ -59,7 +59,7 @@ export const ISSUE_STATUS_LABELS = {
 };
 
 export const ISSUE_PRIORITIES = ['p0', 'p1', 'p2', 'p3'];
-export const ISSUE_TEAMS = ['backend', 'frontend', 'qa', 'ops'];
+export const ISSUE_TEAMS = ['backend', 'frontend', 'qa', 'ops', 'app'];
 export const ISSUE_ENVIRONMENTS = ['local', 'staging', 'production'];
 
 export const ISSUE_TEAM_LABELS = {
@@ -67,6 +67,7 @@ export const ISSUE_TEAM_LABELS = {
   frontend: 'Frontend',
   qa: 'QA',
   ops: 'Ops',
+  app: 'App',
 };
 
 /** Valid status transitions — maps each status to the statuses it can move to */
@@ -250,7 +251,7 @@ export const PRIORITY_COLORS = {
  * @property {string|null} actual_result
  * @property {'local'|'staging'|'production'|null} environment
  * @property {string|null} assignee
- * @property {'backend'|'frontend'|'qa'|'ops'|null} team
+ * @property {'backend'|'frontend'|'qa'|'ops'|'app'|null} team
  * @property {string} created_at
  * @property {string} updated_at
  * @property {string|null} completed_at
