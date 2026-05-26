@@ -4,26 +4,39 @@ const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// Load .env file for development
-if (!app.isPackaged) {
-  try {
-    const envPath = path.join(__dirname, '..', '.env');
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, 'utf-8');
-      envContent.split('\n').forEach((line) => {
-        const trimmed = line.trim();
-        if (trimmed && !trimmed.startsWith('#')) {
-          const [key, ...valueParts] = trimmed.split('=');
-          if (key && valueParts.length > 0) {
-            process.env[key.trim()] = valueParts.join('=').trim();
+// Load .env — works in both development and packaged builds.
+// Search order:
+//   1. Next to the app executable (packaged: user can drop a .env beside the .app)
+//   2. Project root relative to __dirname  (development: electron/.. )
+//   3. Electron resources dir             (packaged: bundled inside .asar)
+(function loadEnv() {
+  const candidates = [
+    path.join(path.dirname(app.getPath('exe')), '.env'),   // beside .app bundle
+    path.join(__dirname, '..', '.env'),                    // dev: project root
+    path.join(process.resourcesPath || '', '.env'),        // packaged: resources/
+  ];
+
+  for (const envPath of candidates) {
+    try {
+      if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf-8');
+        envContent.split('\n').forEach((line) => {
+          const trimmed = line.trim();
+          if (trimmed && !trimmed.startsWith('#')) {
+            const [key, ...valueParts] = trimmed.split('=');
+            if (key && valueParts.length > 0) {
+              process.env[key.trim()] = valueParts.join('=').trim();
+            }
           }
-        }
-      });
+        });
+        console.log('[main] Loaded .env from:', envPath);
+        break; // stop after first match
+      }
+    } catch (err) {
+      console.error('[main] Failed to load .env from', envPath, ':', err.message);
     }
-  } catch (err) {
-    console.error('[main] Failed to load .env:', err.message);
   }
-}
+})();
 
 const isDev = !app.isPackaged;
 
@@ -38,6 +51,7 @@ function createWindow() {
     backgroundColor: '#0e0e10',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     frame: process.platform !== 'darwin',
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

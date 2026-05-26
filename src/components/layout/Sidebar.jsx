@@ -11,11 +11,11 @@ import {
   BrainCircuit,
   Settings,
   ChevronRight,
-  Terminal,
   LogOut,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useToast } from '../ui/Toast';
+import Logo from '../shared/Logo';
 
 
 const NAV_ITEMS = [
@@ -50,9 +50,7 @@ export default function Sidebar() {
       <div className={`flex items-center gap-3 py-4 border-b border-border flex-shrink-0 drag-region select-none ${
         window.electron?.platform === 'darwin' ? 'pl-[76px] pr-4' : 'px-4'
       }`}>
-        <div className="w-8 h-8 rounded-lg bg-brand-blue/20 border border-brand-blue/30 flex items-center justify-center flex-shrink-0">
-          <Terminal size={15} className="text-brand-blue" />
-        </div>
+        <Logo className="w-8 h-8 flex-shrink-0" />
         <div>
           <span className="text-sm font-semibold text-text-primary tracking-tight">
             CommandCenter

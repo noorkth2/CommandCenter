@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../components/ui/Toast';
-import { LogIn, Terminal } from 'lucide-react';
+import { LogIn } from 'lucide-react';
+import Logo from '../components/shared/Logo';
 
 export default function Login() {
   const { loginWithGoogle, loading } = useAuthStore();
@@ -43,7 +44,7 @@ export default function Login() {
           {/* Logo badge */}
           <div className="mx-auto w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-blue to-brand-purple p-[1px] shadow-lg shadow-brand-blue/20 flex items-center justify-center mb-6">
             <div className="w-full h-full bg-bg-surface rounded-[11px] flex items-center justify-center">
-              <Terminal className="text-brand-blue" size={22} />
+              <Logo className="w-6 h-6" />
             </div>
           </div>
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Terminal, Database, Key, CheckCircle2, Copy, Check, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Database, Key, CheckCircle2, Copy, Check, RefreshCw, AlertTriangle } from 'lucide-react';
 import Button from '../components/ui/Button';
+import Logo from '../components/shared/Logo';
 
 export default function Setup() {
   const [copiedEnv, setCopiedEnv] = useState(false);
@@ -47,9 +48,7 @@ VITE_APP_VERSION=1.0.0`;
 
         {/* Title / Logo */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-brand-blue/15 border border-brand-blue/30 flex items-center justify-center">
-            <Terminal size={20} className="text-brand-blue" />
-          </div>
+          <Logo className="w-10 h-10" />
           <div>
             <h1 className="text-xl font-bold tracking-tight">CommandCenter</h1>
             <p className="text-xs text-text-muted">Configuration Required</p>
