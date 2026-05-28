@@ -5,6 +5,8 @@ const ToastContext = createContext(null);
 
 let toastIdCounter = 0;
 
+let globalToastRef = null;
+
 /**
  * Toast notification provider.
  * Wrap the app root with this to enable useToast() anywhere.
@@ -36,6 +38,13 @@ export function ToastProvider({ children }) {
     info: (msg, duration) => addToast(msg, 'info', duration),
   };
 
+  useEffect(() => {
+    globalToastRef = toast;
+    return () => {
+      globalToastRef = null;
+    };
+  }, [addToast]);
+
   return (
     <ToastContext.Provider value={toast}>
       {children}
@@ -63,15 +72,26 @@ function ToastItem({ toast, onRemove }) {
       <Icon size={16} className={`${iconColor} flex-shrink-0 mt-0.5`} />
       <p className="text-sm text-text-primary flex-1 leading-relaxed">{toast.message}</p>
       <button
-        onClick={() => onRemove(toast.id)}
-        className="text-text-muted hover:text-text-secondary transition-colors flex-shrink-0"
-        aria-label="Dismiss notification"
+         onClick={() => onRemove(toast.id)}
+         className="text-text-muted hover:text-text-secondary transition-colors flex-shrink-0"
+         aria-label="Dismiss notification"
       >
         <X size={14} />
       </button>
     </div>
   );
 }
+
+/**
+ * Standalone toast utility that does not trigger React Hook errors.
+ * Safe to use in non-component files like stores and models.
+ */
+export const toast = {
+  success: (msg, duration) => globalToastRef ? globalToastRef.success(msg, duration) : console.log('[Toast Success Fallback]', msg),
+  error: (msg, duration) => globalToastRef ? globalToastRef.error(msg, duration) : console.error('[Toast Error Fallback]', msg),
+  warning: (msg, duration) => globalToastRef ? globalToastRef.warning(msg, duration) : console.warn('[Toast Warning Fallback]', msg),
+  info: (msg, duration) => globalToastRef ? globalToastRef.info(msg, duration) : console.info('[Toast Info Fallback]', msg),
+};
 
 /**
  * Hook to access the toast notification system.
@@ -82,7 +102,8 @@ function ToastItem({ toast, onRemove }) {
 export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) {
-    throw new Error('useToast must be used within a ToastProvider');
+    if (globalToastRef) return globalToastRef;
+    return toast;
   }
   return ctx;
 }

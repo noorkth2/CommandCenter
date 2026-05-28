@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FolderKanban,
@@ -8,6 +8,8 @@ import {
   ArrowUpRight,
   Zap,
   Sparkles,
+  TrendingUp,
+  LineChart as LineChartIcon,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -18,6 +20,8 @@ import {
   Tooltip,
   AreaChart,
   Area,
+  LineChart,
+  Line,
   CartesianGrid,
 } from 'recharts';
 
@@ -29,7 +33,7 @@ import { useSprintStore } from '../store/useSprintStore';
 import Button from '../components/ui/Button';
 import StatusBadge from '../components/shared/StatusBadge';
 import PriorityBadge from '../components/shared/PriorityBadge';
-import { ISSUE_STATUS_LABELS } from '../lib/constants';
+import { ISSUE_STATUS_LABELS, SPRINT_STATUS_LABELS } from '../lib/constants';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -83,6 +87,53 @@ export default function Dashboard() {
       name: ISSUE_STATUS_LABELS[statusKey],
       count: issueCountsByStatus[statusKey] || 0,
     }));
+
+  // 3. Velocity Chart — completed issues per sprint (last 8 completed sprints)
+  const completedSprints = sprints
+    .filter((s) => s.status === 'completed')
+    .slice(-8);
+
+  const velocityChartData = useMemo(() => {
+    return completedSprints.map((sprint) => {
+      const doneIssues = issues.filter(
+        (i) => i.sprint_id === sprint.id && i.status === 'done'
+      );
+      return {
+        name: sprint.name.length > 12 ? sprint.name.slice(0, 12) + '…' : sprint.name,
+        completed: doneIssues.length,
+      };
+    });
+  }, [completedSprints, issues]);
+
+  // 4. Burndown Chart — active sprint daily remaining
+  const burndownChartData = useMemo(() => {
+    if (!activeSprint || !activeSprint.start_date) return [];
+
+    const now = new Date();
+    const start = new Date(activeSprint.start_date);
+    const end = activeSprint.end_date ? new Date(activeSprint.end_date) : new Date(now.getTime() + 7 * 86400000);
+    const totalDays = Math.max(1, Math.ceil((end - start) / 86400000));
+    const elapsedDays = Math.max(0, Math.ceil((now - start) / 86400000));
+    const totalIssues = activeSprintIssues.length;
+
+    const doneDates = activeSprintIssues
+      .filter((i) => i.status === 'done' && i.completed_at)
+      .map((i) => new Date(i.completed_at).toDateString());
+
+    const points = [];
+    for (let d = 0; d <= Math.min(elapsedDays, totalDays); d++) {
+      const day = new Date(start.getTime() + d * 86400000);
+      const completedByDay = doneDates.filter((dd) => new Date(dd) <= day).length;
+      const remaining = totalIssues - completedByDay;
+      const idealRemaining = Math.round(totalIssues * (1 - d / totalDays));
+      points.push({
+        day: d === 0 ? 'Start' : d === elapsedDays ? 'Today' : `D${d}`,
+        remaining,
+        ideal: idealRemaining,
+      });
+    }
+    return points;
+  }, [activeSprint, activeSprintIssues]);
 
   // 2. Recent Deployment Activity (last 6 deployments)
   const deploymentChartData = [...deployments]
@@ -282,6 +333,93 @@ export default function Dashboard() {
                 <Bar dataKey="count" fill="#5b6af8" radius={[4, 4, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid: Velocity & Burndown Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Velocity Chart */}
+        <div className="card p-5 h-[300px] space-y-3 flex flex-col">
+          <div className="flex items-center gap-2 border-b border-border pb-3">
+            <TrendingUp size={15} className="text-brand-purple" />
+            <span className="text-xs font-semibold text-text-primary">Sprint Velocity</span>
+            <span className="text-2xs text-text-muted ml-auto">Completed issues per sprint</span>
+          </div>
+          <div className="flex-1 w-full min-h-0">
+            {velocityChartData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-text-muted text-xs">
+                Complete a sprint to see velocity data
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={velocityChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <XAxis dataKey="name" stroke="#5a5870" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#5a5870" fontSize={11} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                    contentStyle={{
+                      background: '#16161a',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      color: '#e8e6f0',
+                    }}
+                  />
+                  <Bar dataKey="completed" fill="#a78bfa" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Burndown Chart */}
+        <div className="card p-5 h-[300px] space-y-3 flex flex-col">
+          <div className="flex items-center gap-2 border-b border-border pb-3">
+            <LineChartIcon size={15} className="text-brand-amber" />
+            <span className="text-xs font-semibold text-text-primary">Sprint Burndown</span>
+            <span className="text-2xs text-text-muted ml-auto">Actual vs ideal remaining</span>
+          </div>
+          <div className="flex-1 w-full min-h-0">
+            {burndownChartData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-text-muted text-xs">
+                {activeSprint ? 'No issues in active sprint' : 'No active sprint running'}
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={burndownChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="day" stroke="#5a5870" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#5a5870" fontSize={11} tickLine={false} allowDecimals={false} domain={[0, 'auto']} />
+                  <Tooltip
+                    contentStyle={{
+                      background: '#16161a',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      color: '#e8e6f0',
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="ideal"
+                    stroke="#5a5870"
+                    strokeWidth={1.5}
+                    strokeDasharray="6 4"
+                    dot={false}
+                    name="Ideal"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="remaining"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: '#f59e0b' }}
+                    name="Actual"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>

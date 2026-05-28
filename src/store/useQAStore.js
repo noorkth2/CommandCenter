@@ -1,18 +1,36 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { toast } from '../components/ui/Toast';
+import {
+  tempId,
+  optimisticAdd,
+  optimisticUpdate,
+  optimisticRemove,
+  rollbackAdd,
+  rollbackUpdate,
+  rollbackRemove,
+  safeMutate,
+} from '../lib/storeUtils';
+import { cacheGet, cacheSet, cacheInvalidate } from '../lib/cache';
 
-/**
- * @typedef {import('../lib/constants').QAItem} QAItem
- */
+const CACHE_KEY = 'qa_items';
 
 export const useQAStore = create((set, get) => ({
-  /** @type {QAItem[]} */
   items: [],
   loading: false,
   error: null,
   selected: new Set(), // selected row IDs for bulk actions
 
-  fetch: async (filters = {}) => {
+  // ─── READ ──────────────────────────────────────────────────────────────────
+
+  fetchQAItems: async (filters = {}) => {
+    const cacheKey = `${CACHE_KEY}:${JSON.stringify(filters)}`;
+    const cached = cacheGet(cacheKey);
+    if (cached) {
+      set({ items: cached, loading: false, error: null });
+      return;
+    }
+
     set({ loading: true, error: null });
     try {
       let query = supabase
@@ -33,71 +51,151 @@ export const useQAStore = create((set, get) => ({
 
       const { data, error } = await query;
       if (error) throw error;
-      set({ items: data ?? [], loading: false });
+      const items = data ?? [];
+      cacheSet(cacheKey, items);
+      set({ items, loading: false });
     } catch (err) {
       set({ error: err.message, loading: false });
     }
   },
 
-  /** @param {Omit<QAItem, 'id'|'created_at'|'updated_at'>} payload */
-  create: async (payload) => {
-    const { data, error } = await supabase
-      .from('qa_items')
-      .insert(payload)
-      .select('*, projects(name), issues(title)')
-      .single();
-    if (error) throw new Error(error.message);
-    set((s) => ({ items: [data, ...s.items] }));
-    return data;
+  // ─── CREATE ────────────────────────────────────────────────────────────────
+
+  addQAItem: async (payload) => {
+    const tid = tempId();
+    set((s) => ({ items: optimisticAdd(s.items, payload, tid) }));
+
+    try {
+      const result = await safeMutate(
+        { table: 'qa_items', op: 'upsert', payload: { ...payload, id: tid } },
+        () => supabase.from('qa_items').insert(payload).select('*, projects(name), issues(title)').single()
+      );
+
+      if (result.offline) {
+        toast.info('Saved offline — will sync when connected');
+        cacheInvalidate(`${CACHE_KEY}:*`);
+        return { data: { ...payload, id: tid } };
+      }
+
+      cacheInvalidate(`${CACHE_KEY}:*`);
+      set((s) => ({ items: s.items.map((i) => (i.id === tid ? result.data : i)) }));
+      return { data: result.data };
+    } catch (err) {
+      set((s) => ({ items: rollbackAdd(s.items, tid), error: err.message }));
+      toast.error(err.message);
+      return { error: err.message };
+    }
   },
 
-  /**
-   * @param {string} id
-   * @param {Partial<QAItem>} payload
-   */
-  update: async (id, payload) => {
-    const { data, error } = await supabase
-      .from('qa_items')
-      .update(payload)
-      .eq('id', id)
-      .select('*, projects(name), issues(title)')
-      .single();
-    if (error) throw new Error(error.message);
-    set((s) => ({ items: s.items.map((i) => (i.id === id ? data : i)) }));
-    return data;
+  // ─── UPDATE ────────────────────────────────────────────────────────────────
+
+  updateQAItem: async (id, patch) => {
+    const prev = get().items.find((i) => i.id === id);
+    set((s) => ({ items: optimisticUpdate(s.items, id, { ...patch, updated_at: new Date().toISOString() }) }));
+
+    try {
+      const result = await safeMutate(
+        { table: 'qa_items', op: 'upsert', payload: { id, ...patch, updated_at: new Date().toISOString() } },
+        () => supabase.from('qa_items').update(patch).eq('id', id).select('*, projects(name), issues(title)').single()
+      );
+
+      if (result.offline) {
+        toast.info('Saved offline — will sync when connected');
+        cacheInvalidate(`${CACHE_KEY}:*`);
+        return { data: { ...prev, ...patch } };
+      }
+
+      cacheInvalidate(`${CACHE_KEY}:*`);
+      set((s) => ({ items: s.items.map((i) => (i.id === id ? result.data : i)) }));
+      return { data: result.data };
+    } catch (err) {
+      set((s) => ({ items: rollbackUpdate(s.items, id, prev), error: err.message }));
+      toast.error(err.message);
+      return { error: err.message };
+    }
   },
 
-  /** @param {string} id */
-  delete: async (id) => {
-    const { error } = await supabase.from('qa_items').delete().eq('id', id);
-    if (error) throw new Error(error.message);
-    set((s) => ({ items: s.items.filter((i) => i.id !== id) }));
+  // ─── DELETE ────────────────────────────────────────────────────────────────
+
+  deleteQAItem: async (id) => {
+    const prev = get().items;
+    set((s) => ({ items: optimisticRemove(s.items, id) }));
+
+    try {
+      const result = await safeMutate(
+        { table: 'qa_items', op: 'delete', payload: { id } },
+        () => supabase.from('qa_items').delete().eq('id', id)
+      );
+
+      if (result.offline) {
+        toast.info('Delete saved offline — will sync when connected');
+        cacheInvalidate(`${CACHE_KEY}:*`);
+        return { success: true };
+      }
+
+      cacheInvalidate(`${CACHE_KEY}:*`);
+      return { success: true };
+    } catch (err) {
+      set({ items: rollbackRemove(null, prev), error: err.message });
+      toast.error(err.message);
+      return { error: err.message };
+    }
   },
 
-  /** Bulk update status for selected items */
+  // ─── BULK & SELECTION ACTIONS ──────────────────────────────────────────────
+
   bulkUpdateStatus: async (ids, status) => {
-    const { error } = await supabase
-      .from('qa_items')
-      .update({ status })
-      .in('id', ids);
-    if (error) throw new Error(error.message);
+    const prevItems = get().items;
     set((s) => ({
       items: s.items.map((i) => (ids.includes(i.id) ? { ...i, status } : i)),
       selected: new Set(),
     }));
+
+    try {
+      const result = await safeMutate(
+        { table: 'qa_items', op: 'upsert', payload: { ids, status } },
+        () => supabase.from('qa_items').update({ status }).in('id', ids)
+      );
+
+      if (result.offline) {
+        toast.info('Bulk update saved offline — will sync when connected');
+        cacheInvalidate(`${CACHE_KEY}:*`);
+        return;
+      }
+
+      cacheInvalidate(`${CACHE_KEY}:*`);
+    } catch (err) {
+      set({ items: prevItems, error: err.message });
+      toast.error(err.message);
+      return { error: err.message };
+    }
   },
 
-  /** Bulk update severity for selected items */
   bulkUpdateSeverity: async (ids, severity) => {
-    const { error } = await supabase
-      .from('qa_items')
-      .update({ severity })
-      .in('id', ids);
-    if (error) throw new Error(error.message);
+    const prevItems = get().items;
     set((s) => ({
       items: s.items.map((i) => (ids.includes(i.id) ? { ...i, severity } : i)),
       selected: new Set(),
     }));
+
+    try {
+      const result = await safeMutate(
+        { table: 'qa_items', op: 'upsert', payload: { ids, severity } },
+        () => supabase.from('qa_items').update({ severity }).in('id', ids)
+      );
+
+      if (result.offline) {
+        toast.info('Bulk update saved offline — will sync when connected');
+        cacheInvalidate(`${CACHE_KEY}:*`);
+        return;
+      }
+
+      cacheInvalidate(`${CACHE_KEY}:*`);
+    } catch (err) {
+      set({ items: prevItems, error: err.message });
+      toast.error(err.message);
+      return { error: err.message };
+    }
   },
 
   toggleSelected: (id) =>
@@ -112,7 +210,10 @@ export const useQAStore = create((set, get) => ({
 
   clearSelection: () => set({ selected: new Set() }),
 
-  /** Computed stats */
+  // ─── STATS & HELPERS ───────────────────────────────────────────────────────
+
+  clearError: () => set({ error: null }),
+
   getStats: () => {
     const items = get().items;
     return {
@@ -124,4 +225,10 @@ export const useQAStore = create((set, get) => ({
       in_progress: items.filter((i) => i.status === 'in_progress').length,
     };
   },
+
+  // Backward Compatibility Aliases
+  fetch: (filters) => get().fetchQAItems(filters),
+  create: (payload) => get().addQAItem(payload).then((r) => { if (r.error) throw new Error(r.error); return r.data; }),
+  update: (id, payload) => get().updateQAItem(id, payload).then((r) => { if (r.error) throw new Error(r.error); return r.data; }),
+  delete: (id) => get().deleteQAItem(id).then(r => { if (r.error) throw new Error(r.error); return r.success; }),
 }));

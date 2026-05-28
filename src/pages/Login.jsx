@@ -3,11 +3,16 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../components/ui/Toast';
 import { LogIn } from 'lucide-react';
 import Logo from '../components/shared/Logo';
+import { Navigate } from 'react-router-dom';
 
 export default function Login() {
-  const { loginWithGoogle, loading } = useAuthStore();
+  const { loginWithGoogle, loading, session } = useAuthStore();
   const [localLoading, setLocalLoading] = useState(false);
   const toast = useToast();
+
+  if (session) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleLogin = async () => {
     setLocalLoading(true);

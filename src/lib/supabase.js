@@ -8,9 +8,9 @@ export function checkIsConfigured() {
   const url = import.meta.env.VITE_SUPABASE_URL || '';
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
   return (
-    !!url && 
-    !!key && 
-    url !== 'https://your-project.supabase.co' && 
+    !!url &&
+    !!key &&
+    url !== 'https://your-project.supabase.co' &&
     key !== 'your-anon-key' &&
     url.trim() !== '' &&
     key.trim() !== ''
@@ -19,26 +19,46 @@ export function checkIsConfigured() {
 
 const isConfigured = checkIsConfigured();
 
+function buildClient(url, key) {
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
+    },
+  });
+}
+
+let _client = isConfigured ? buildClient(supabaseUrl, supabaseAnonKey) : null;
 
 /**
  * Supabase client for the renderer process.
- * Used directly for all CRUD operations from React components.
- * Auth is disabled — this is a single-user desktop app.
+ * Uses a Proxy so that swapping the internal client (via recreateClient)
+ * is transparent to all stores that import `supabase`.
  */
-export const supabase = isConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: false,
-      },
-      realtime: {
-        params: {
-          eventsPerSecond: 10,
-        },
-      },
-    })
-  : null;
+export const supabase = new Proxy({}, {
+  get(_, prop) {
+    return _client?.[prop];
+  },
+  set(_, prop, value) {
+    if (_client) _client[prop] = value;
+    return true;
+  },
+});
+
+/**
+ * Replace the renderer-side Supabase client at runtime.
+ * Called when the user switches workspaces.
+ */
+export function recreateClient(url, anonKey) {
+  _client = buildClient(url, anonKey);
+}
 
 export default supabase;
 

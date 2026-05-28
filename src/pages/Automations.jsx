@@ -10,10 +10,10 @@ import {
   ToggleLeft,
   ToggleRight,
   Code,
-  FileText,
   Mail,
   Bug,
   Calendar,
+  Activity,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -32,29 +32,23 @@ import {
   AUTOMATION_ACTION_LABELS,
 } from '../lib/constants';
 
+// Hide the stub action that isn't implemented yet
+const VISIBLE_ACTION_TYPES = AUTOMATION_ACTION_TYPES.filter(
+  (t) => t !== 'create_notion_page'
+);
+
 const triggerSchema = z.object({
   name: z.string().min(1, 'Automation name is required'),
   description: z.string().optional(),
   trigger_type: z.enum(AUTOMATION_TRIGGER_TYPES),
   action_type: z.enum(AUTOMATION_ACTION_TYPES),
-  // JSON configurations (input as strings, validated/parsed inside Refine)
   trigger_config: z.string().refine((str) => {
     if (!str.trim()) return true;
-    try {
-      JSON.parse(str);
-      return true;
-    } catch {
-      return false;
-    }
+    try { JSON.parse(str); return true; } catch { return false; }
   }, 'Must be valid JSON'),
   action_config: z.string().refine((str) => {
     if (!str.trim()) return true;
-    try {
-      JSON.parse(str);
-      return true;
-    } catch {
-      return false;
-    }
+    try { JSON.parse(str); return true; } catch { return false; }
   }, 'Must be valid JSON'),
 });
 
@@ -183,13 +177,13 @@ export default function Automations() {
   const getActionIcon = (action) => {
     switch (action) {
       case 'create_qa_entry':
-        return <Bug size={14} className="text-brand-red" />;
+        return <Bug size={13} className="text-brand-red" />;
       case 'send_email':
-        return <Mail size={14} className="text-brand-amber" />;
+        return <Mail size={13} className="text-brand-amber" />;
       case 'generate_ai_report':
-        return <Code size={14} className="text-brand-purple" />;
+        return <Code size={13} className="text-brand-purple" />;
       default:
-        return <Zap size={14} className="text-brand-blue" />;
+        return <Zap size={13} className="text-brand-blue" />;
     }
   };
 
@@ -230,15 +224,15 @@ export default function Automations() {
             <div
               key={rule.id}
               onClick={() => openEdit(rule)}
-              className="card p-5 cursor-pointer hover:border-border-strong hover:shadow-card hover:-translate-y-px transition-all duration-150 flex flex-col justify-between h-48 relative group"
+              className="card p-5 cursor-pointer hover:border-border-strong hover:shadow-card hover:-translate-y-px transition-all duration-150 flex flex-col justify-between h-52 relative group"
             >
-              {/* Top part: details */}
+              {/* Top: name + toggle */}
               <div>
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-text-primary truncate">{rule.name}</h3>
                     {rule.description && (
-                      <p className="text-xs text-text-secondary mt-1 truncate-2 line-clamp-2">
+                      <p className="text-xs text-text-secondary mt-1 line-clamp-2">
                         {rule.description}
                       </p>
                     )}
@@ -246,7 +240,8 @@ export default function Automations() {
                   <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => toggle(rule.id)}
-                      className="btn-icon w-8 h-8 rounded hover:bg-bg-hover flex items-center justify-center text-text-secondary hover:text-text-primary"
+                      className="btn-icon w-8 h-8 rounded hover:bg-bg-hover flex items-center justify-center"
+                      title={rule.enabled ? 'Disable automation' : 'Enable automation'}
                     >
                       {rule.enabled ? (
                         <ToggleRight size={22} className="text-brand-blue" />
@@ -257,6 +252,7 @@ export default function Automations() {
                   </div>
                 </div>
 
+                {/* Trigger / Action badges */}
                 <div className="flex flex-wrap gap-2 mt-3">
                   <span className="badge text-2xs bg-bg-elevated border-border text-text-secondary flex items-center gap-1.5">
                     <Calendar size={11} className="text-text-muted" />
@@ -266,23 +262,29 @@ export default function Automations() {
                     {getActionIcon(rule.action_type)}
                     Action: <span className="font-medium text-text-primary">{AUTOMATION_ACTION_LABELS[rule.action_type]}</span>
                   </span>
+                  {/* Trigger count badge */}
+                  <span className="badge text-2xs bg-brand-blue/10 border-brand-blue/20 text-brand-blue flex items-center gap-1">
+                    <Activity size={10} />
+                    <span className="font-semibold">{rule.trigger_count ?? 0}</span>
+                    <span className="text-brand-blue/70">{rule.trigger_count === 1 ? 'run' : 'runs'}</span>
+                  </span>
                 </div>
               </div>
 
-              {/* Bottom: statistics & actions */}
+              {/* Bottom: last triggered + actions */}
               <div className="border-t border-border pt-3 flex items-center justify-between text-2xs text-text-muted mt-3">
-                <div className="flex items-center gap-4">
-                  <span>
-                    Fired: <strong className="text-text-secondary">{rule.trigger_count}</strong> times
-                  </span>
-                  {rule.last_triggered_at && (
-                    <span>
-                      Last: {format(new Date(rule.last_triggered_at), 'MMM d, HH:mm')}
-                    </span>
+                <div>
+                  {rule.last_triggered_at ? (
+                    <span>Last run: {format(new Date(rule.last_triggered_at), 'MMM d, HH:mm')}</span>
+                  ) : (
+                    <span className="italic">Never triggered</span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Button
                     variant="ghost"
                     size="sm"
@@ -308,7 +310,7 @@ export default function Automations() {
         </div>
       )}
 
-      {/* Editor slide-over or dialog */}
+      {/* Editor Dialog */}
       <Dialog
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
@@ -360,7 +362,7 @@ export default function Automations() {
             />
             <Select
               label="Action to Execute"
-              options={toOptions(AUTOMATION_ACTION_TYPES, AUTOMATION_ACTION_LABELS)}
+              options={toOptions(VISIBLE_ACTION_TYPES, AUTOMATION_ACTION_LABELS)}
               error={errors.action_type?.message}
               {...register('action_type')}
             />
@@ -369,7 +371,7 @@ export default function Automations() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             <Textarea
               label="Trigger Config (JSON)"
-              placeholder='{\n  "labels": ["bug"]\n}'
+              placeholder={'{\n  "labels": ["bug"]\n}'}
               rows={4}
               error={errors.trigger_config?.message}
               hint='Match conditions (e.g. {"labels": ["bug"]} or {"environment": "production"})'
@@ -379,7 +381,7 @@ export default function Automations() {
 
             <Textarea
               label="Action Config (JSON)"
-              placeholder='{\n  "severity": "high",\n  "status": "to_test"\n}'
+              placeholder={'{\n  "severity": "high",\n  "status": "to_test"\n}'}
               rows={4}
               error={errors.action_config?.message}
               hint='Payload configs (e.g. {"subject_template": "Alert: {name}"})'

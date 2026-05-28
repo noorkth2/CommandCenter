@@ -12,6 +12,8 @@ import { useSprintStore } from '../store/useSprintStore';
 import { useQAStore } from '../store/useQAStore';
 import { useAI } from '../hooks/useAI';
 import { useAutomations } from '../hooks/useAutomations';
+import { useTimeTrackingStore } from '../store/useTimeTrackingStore';
+import TimerControl from '../components/timetracking/TimerControl';
 import { useToast } from '../components/ui/Toast';
 import Button from '../components/ui/Button';
 import Dialog from '../components/ui/Dialog';
@@ -81,6 +83,8 @@ export default function Issues() {
   const [confirmId, setConfirmId] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [generatingRca, setGeneratingRca] = useState(false);
+  const [issueTimeEntries, setIssueTimeEntries] = useState([]);
+  const [timeTotal, setTimeTotal] = useState(0);
 
   const { register, handleSubmit, reset, watch, control, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
@@ -101,7 +105,7 @@ export default function Issues() {
     setPanelOpen(true);
   };
 
-  const openEdit = useCallback((issue) => {
+  const openEdit = useCallback(async (issue) => {
     setEditing(issue);
     reset({
       title: issue.title,
@@ -118,6 +122,13 @@ export default function Issues() {
       expected_result: issue.expected_result ?? '',
       actual_result: issue.actual_result ?? '',
     });
+    // Load time entries for this issue
+    try {
+      const { fetchByIssue } = useTimeTrackingStore.getState();
+      const entries = await fetchByIssue(issue.id);
+      setIssueTimeEntries(entries);
+      setTimeTotal(entries.reduce((s, e) => s + (e.duration_minutes || 0), 0));
+    } catch { /* silent */ }
     setPanelOpen(true);
   }, [reset]);
 
@@ -458,6 +469,45 @@ export default function Issues() {
             <Textarea label="Actual Result" placeholder="What actually happened" rows={2} {...register('actual_result')} />
           </div>
         </form>
+
+        {/* Time Tracking Section */}
+        {editing && (
+          <div className="mt-6 pt-4 border-t border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-text-primary">Time Tracking</span>
+              <div className="flex items-center gap-2">
+                <TimerControl issueId={editing.id} issueTitle={editing.title} />
+              </div>
+            </div>
+            {timeTotal > 0 && (
+              <p className="text-2xs text-text-muted">
+                Total: {Math.floor(timeTotal / 60)}h {timeTotal % 60}m
+              </p>
+            )}
+            {issueTimeEntries.length > 0 ? (
+              <div className="space-y-1 max-h-[150px] overflow-y-auto">
+                {issueTimeEntries.slice(0, 10).map((entry) => (
+                  <div key={entry.id} className="flex items-center justify-between p-2 rounded bg-bg-elevated border border-border">
+                    <div className="min-w-0 flex-1">
+                      {entry.description && (
+                        <p className="text-2xs text-text-secondary truncate">{entry.description}</p>
+                      )}
+                      <p className="text-2xs text-text-muted">{entry.date}</p>
+                    </div>
+                    <span className="text-2xs font-mono text-text-secondary flex-shrink-0 ml-2">
+                      {Math.floor((entry.duration_minutes || 0) / 60)}h {(entry.duration_minutes || 0) % 60}m
+                    </span>
+                  </div>
+                ))}
+                {issueTimeEntries.length > 10 && (
+                  <p className="text-2xs text-text-muted text-center pt-1">+ {issueTimeEntries.length - 10} more</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-2xs text-text-muted">No time logged yet</p>
+            )}
+          </div>
+        )}
       </Dialog>
 
       <ConfirmDialog

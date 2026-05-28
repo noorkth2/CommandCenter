@@ -2,30 +2,14 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-let _client = null;
-
 /**
- * Returns a singleton Supabase client for the main process.
- * Uses VITE_ env vars (available because we load .env in main.js).
+ * Returns a Supabase client for the main process.
+ * Delegates to workspace.ipc which is workspace-aware (switches client
+ * when the user changes active workspace). Falls back to VITE_ env vars.
  */
 function getSupabaseClient() {
-  if (_client) return _client;
-
-  const url = process.env.VITE_SUPABASE_URL;
-  const key = process.env.VITE_SUPABASE_ANON_KEY;
-
-  if (!url || !key) {
-    throw new Error(
-      '[supabase.ipc] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not set. ' +
-        'Copy .env.example to .env and fill in your Supabase credentials.'
-    );
-  }
-
-  _client = createClient(url, key, {
-    auth: { persistSession: false },
-  });
-
-  return _client;
+  const { getMainClient } = require('./workspace.ipc');
+  return getMainClient();
 }
 
 /**

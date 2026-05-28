@@ -185,6 +185,10 @@ function registerIpcHandlers() {
   });
 
   // ── Settings ─────────────────────────────────────────────────────
+  const { encrypt, decrypt } = require('./ipc/encrypt');
+  const SECRET_KEYS = new Set(['claude_api_key', 'smtp_pass']);
+  const MASKED = '••••••••••••';
+
   ipcMain.handle('settings:get', async (_event, key) => {
     const { getSupabaseClient } = require('./ipc/supabase.ipc');
     try {
@@ -195,7 +199,13 @@ function registerIpcHandlers() {
         .eq('key', key)
         .single();
       if (error) throw error;
-      return { data: data?.value ?? null, error: null };
+
+      const rawValue = data?.value ?? null;
+      // Return masked value for secrets — never send plaintext to renderer
+      if (rawValue && SECRET_KEYS.has(key)) {
+        return { data: MASKED, error: null };
+      }
+      return { data: rawValue, error: null };
     } catch (err) {
       return { data: null, error: err.message };
     }
@@ -204,10 +214,20 @@ function registerIpcHandlers() {
   ipcMain.handle('settings:set', async (_event, key, value) => {
     const { getSupabaseClient } = require('./ipc/supabase.ipc');
     try {
+      // Caller is sending back a placeholder — nothing to update
+      if (value === MASKED) {
+        return { success: true, error: null };
+      }
+
+      let storedValue = value;
+      if (SECRET_KEYS.has(key) && value) {
+        storedValue = encrypt(value);
+      }
+
       const client = getSupabaseClient();
       const { error } = await client
         .from('settings')
-        .upsert({ key, value, updated_at: new Date().toISOString() });
+        .upsert({ key, value: storedValue, updated_at: new Date().toISOString() });
       if (error) throw error;
       return { success: true, error: null };
     } catch (err) {
@@ -233,6 +253,37 @@ function registerIpcHandlers() {
     } catch (err) {
       return { data: null, error: err.message };
     }
+  });
+
+  // ── Workspace Management ──────────────────────────────────────────
+  const {
+    listWorkspaces,
+    addWorkspace,
+    removeWorkspace,
+    switchWorkspace,
+  } = require('./ipc/workspace.ipc');
+
+  ipcMain.handle('workspace:list', async () => {
+    return listWorkspaces();
+  });
+
+  ipcMain.handle('workspace:add', async (_event, payload) => {
+    return addWorkspace(payload);
+  });
+
+  ipcMain.handle('workspace:remove', async (_event, id) => {
+    return removeWorkspace(id);
+  });
+
+  ipcMain.handle('workspace:switch', async (_event, id) => {
+    return switchWorkspace(id);
+  });
+
+  // ── Native Desktop Notifications ──────────────────────────────────
+  const { showNotification } = require('./ipc/notification.ipc');
+  ipcMain.handle('notification:show', async (_event, opts) => {
+    showNotification(opts);
+    return { success: true };
   });
 
   // ── Google OAuth Login ─────────────────────────────────────────────

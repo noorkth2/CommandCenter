@@ -12,6 +12,9 @@ import {
   Settings,
   ChevronRight,
   LogOut,
+  Columns3,
+  Upload,
+  Timer,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useToast } from '../ui/Toast';
@@ -20,6 +23,7 @@ import Logo from '../shared/Logo';
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/board', label: 'Board', icon: Columns3 },
   { path: '/products', label: 'Products', icon: Boxes },
   { path: '/clients', label: 'Clients', icon: Users },
   { path: '/projects', label: 'Projects', icon: FolderKanban },
@@ -29,6 +33,8 @@ const NAV_ITEMS = [
   { path: '/sprints', label: 'Sprints', icon: ChevronRight },
   { path: '/automations', label: 'Automations', icon: Zap },
   { path: '/ai-reports', label: 'AI Reports', icon: BrainCircuit },
+  { path: '/import', label: 'Import', icon: Upload },
+  { path: '/time', label: 'Time Tracking', icon: Timer },
 ];
 
 export default function Sidebar() {

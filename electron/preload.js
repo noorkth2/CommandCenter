@@ -69,4 +69,21 @@ contextBridge.exposeInMainWorld('electron', {
    * Platform info — for UI adjustments
    */
   platform: process.platform,
+
+  /**
+   * Native desktop notifications.
+   */
+  notification: {
+    show: (opts) => ipcRenderer.invoke('notification:show', opts),
+  },
+
+  /**
+   * Workspace management — list, add, switch, remove workspaces.
+   */
+  workspace: {
+    list: () => ipcRenderer.invoke('workspace:list'),
+    add: (payload) => ipcRenderer.invoke('workspace:add', payload),
+    remove: (id) => ipcRenderer.invoke('workspace:remove', id),
+    switch: (id) => ipcRenderer.invoke('workspace:switch', id),
+  },
 });

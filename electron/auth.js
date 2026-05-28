@@ -1,6 +1,12 @@
 'use strict';
 
 const http = require('http');
+const { getSupabaseClient } = require('./ipc/supabase.ipc');
+
+const ALLOWED_EMAILS = [
+  'kayastha.noor1100@gmail.com',
+  'niroj.mahrjan@gmail.com',
+];
 
 let authServer = null;
 
@@ -112,8 +118,16 @@ function startAuthServer() {
               }
 
               fetch(url)
-                .then(r => r.json())
-                .then(() => {
+                .then(r => {
+                  if (!r.ok) {
+                    return r.json().then(data => {
+                      throw new Error(data.error || 'Server error');
+                    });
+                  }
+                  return r.json();
+                })
+                .then((data) => {
+                  if (data.error) throw new Error(data.error);
                   document.getElementById('status-title').textContent = 'Authenticated!';
                   document.getElementById('status-title').style.background = 'linear-gradient(135deg, #3ecf8e, #5b6af8)';
                   document.getElementById('status-title').style.webkitBackgroundClip = 'text';
@@ -121,10 +135,10 @@ function startAuthServer() {
                   document.getElementById('loader').style.display = 'none';
                 })
                 .catch((err) => {
-                  document.getElementById('status-title').textContent = 'Authentication Error';
+                  document.getElementById('status-title').textContent = 'Access Denied';
                   document.getElementById('status-title').style.background = 'linear-gradient(135deg, #e85d4a, #f5a623)';
                   document.getElementById('status-title').style.webkitBackgroundClip = 'text';
-                  document.getElementById('status-text').textContent = 'Failed to pass authentication to the desktop app: ' + err.message;
+                  document.getElementById('status-text').textContent = err.message;
                   document.getElementById('loader').style.display = 'none';
                 });
             </script>
@@ -146,22 +160,53 @@ function startAuthServer() {
 
         const code = url.searchParams.get('code');
 
-        res.writeHead(200, {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        });
-        res.end(JSON.stringify({ success: true }));
+        // Main process allowlist validation
+        (async () => {
+          try {
+            if (!accessToken) {
+              throw new Error('Missing access token.');
+            }
 
-        clearTimeout(timeout);
-        resolve({ accessToken, refreshToken, code });
+            const supabaseClient = getSupabaseClient();
+            const { data: { user }, error: userError } = await supabaseClient.auth.getUser(accessToken);
 
-        // Close server after a short delay to allow response to finish cleanly
-        setTimeout(() => {
-          if (authServer) {
-            authServer.close();
-            authServer = null;
+            if (userError || !user) {
+              throw new Error(userError?.message || 'Failed to authenticate user profile.');
+            }
+
+            if (!ALLOWED_EMAILS.includes(user.email)) {
+              throw new Error(`Your email (${user.email}) is not in the allowed list of CommandCenter workspace developers.`);
+            }
+
+            // Successfully authenticated and authorized
+            res.writeHead(200, {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            });
+            res.end(JSON.stringify({ success: true }));
+
+            clearTimeout(timeout);
+            resolve({ accessToken, refreshToken, code });
+          } catch (err) {
+            console.error('[auth] Validation failed:', err.message);
+            res.writeHead(403, {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            });
+            res.end(JSON.stringify({ success: false, error: err.message }));
+
+            clearTimeout(timeout);
+            reject(err);
+          } finally {
+            // Close server after a short delay to allow response to finish cleanly
+            setTimeout(() => {
+              if (authServer) {
+                authServer.close();
+                authServer = null;
+              }
+            }, 1000);
           }
-        }, 1000);
+        })();
       } else {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Not Found');

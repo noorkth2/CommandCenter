@@ -2,13 +2,14 @@
 
 const nodemailer = require('nodemailer');
 const { getSupabaseClient } = require('./ipc/supabase.ipc');
+const { decrypt } = require('./ipc/encrypt');
 
 /**
  * Reads SMTP settings from Supabase settings table.
- * Returns a nodemailer transporter configured with these credentials.
+ * Returns a nodemailer transport configured with decrypted credentials.
  * Credentials are never logged.
  */
-async function createTransporter() {
+async function createTransport() {
   const client = getSupabaseClient();
   const { data, error } = await client
     .from('settings')
@@ -26,14 +27,16 @@ async function createTransporter() {
     throw new Error('SMTP not configured. Please set SMTP credentials in Settings → Email / SMTP.');
   }
 
+  const smtpPort = parseInt(settings.smtp_port ?? '587', 10);
+
   return {
-    transporter: nodemailer.createTransporter({
+    transport: nodemailer.createTransport({
       host: settings.smtp_host,
-      port: parseInt(settings.smtp_port ?? '587', 10),
-      secure: parseInt(settings.smtp_port ?? '587', 10) === 465,
+      port: smtpPort,
+      secure: smtpPort === 465,
       auth: {
         user: settings.smtp_user,
-        pass: settings.smtp_pass,
+        pass: decrypt(settings.smtp_pass),
       },
       tls: { rejectUnauthorized: false },
     }),
@@ -43,16 +46,16 @@ async function createTransporter() {
 }
 
 /**
- * Sends an email via Nodemailer using SMTP credentials from Supabase settings.
+ * Sends an email via Nodemailer using decrypted SMTP credentials from Supabase settings.
  *
  * @param {{ to?: string, subject: string, html?: string, text?: string }} options
  * @returns {{ success: boolean, messageId?: string, error?: string }}
  */
 async function sendEmail(options) {
   try {
-    const { transporter, defaultFrom, defaultTo } = await createTransporter();
+    const { transport, defaultFrom, defaultTo } = await createTransport();
 
-    const info = await transporter.sendMail({
+    const info = await transport.sendMail({
       from: `"CommandCenter" <${defaultFrom}>`,
       to: options.to || defaultTo,
       subject: options.subject,
@@ -73,3 +76,4 @@ async function sendEmail(options) {
 }
 
 module.exports = { sendEmail };
+

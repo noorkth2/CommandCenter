@@ -1,5 +1,19 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { toast } from '../components/ui/Toast';
+import {
+  tempId,
+  optimisticAdd,
+  optimisticUpdate,
+  optimisticRemove,
+  rollbackAdd,
+  rollbackUpdate,
+  rollbackRemove,
+  safeMutate,
+} from '../lib/storeUtils';
+import { cacheGet, cacheSet, cacheInvalidate } from '../lib/cache';
+
+const CACHE_KEY = 'sprints';
 
 /**
  * @typedef {import('../lib/constants').Sprint} Sprint
@@ -11,7 +25,15 @@ export const useSprintStore = create((set, get) => ({
   loading: false,
   error: null,
 
-  fetch: async () => {
+  // ─── READ ──────────────────────────────────────────────────────────────────
+
+  fetchSprints: async () => {
+    const cached = cacheGet(CACHE_KEY);
+    if (cached) {
+      set({ sprints: cached, loading: false, error: null });
+      return;
+    }
+
     set({ loading: true, error: null });
     try {
       const { data, error } = await supabase
@@ -19,52 +41,102 @@ export const useSprintStore = create((set, get) => ({
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      set({ sprints: data ?? [], loading: false });
+      const items = data ?? [];
+      cacheSet(CACHE_KEY, items);
+      set({ sprints: items, loading: false });
     } catch (err) {
       set({ error: err.message, loading: false });
     }
   },
 
-  /** @param {Omit<Sprint, 'id'|'created_at'|'updated_at'>} payload */
-  create: async (payload) => {
-    const { data, error } = await supabase
-      .from('sprints')
-      .insert(payload)
-      .select()
-      .single();
-    if (error) throw new Error(error.message);
-    set((s) => ({ sprints: [data, ...s.sprints] }));
-    return data;
+  // ─── CREATE ────────────────────────────────────────────────────────────────
+
+  addSprint: async (payload) => {
+    const tid = tempId();
+    set((s) => ({ sprints: optimisticAdd(s.sprints, payload, tid) }));
+
+    try {
+      const result = await safeMutate(
+        { table: 'sprints', op: 'upsert', payload: { ...payload, id: tid } },
+        () => supabase.from('sprints').insert(payload).select().single()
+      );
+
+      if (result.offline) {
+        toast.info('Saved offline — will sync when connected');
+        cacheInvalidate(`${CACHE_KEY}:*`);
+        return { data: { ...payload, id: tid } };
+      }
+
+      cacheInvalidate(`${CACHE_KEY}:*`);
+      set((s) => ({ sprints: s.sprints.map((sp) => (sp.id === tid ? result.data : sp)) }));
+      return { data: result.data };
+    } catch (err) {
+      set((s) => ({ sprints: rollbackAdd(s.sprints, tid), error: err.message }));
+      toast.error(err.message);
+      return { error: err.message };
+    }
   },
 
-  /**
-   * @param {string} id
-   * @param {Partial<Sprint>} payload
-   */
-  update: async (id, payload) => {
-    const { data, error } = await supabase
-      .from('sprints')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw new Error(error.message);
-    set((s) => ({
-      sprints: s.sprints.map((sp) => (sp.id === id ? data : sp)),
-    }));
-    return data;
+  // ─── UPDATE ────────────────────────────────────────────────────────────────
+
+  updateSprint: async (id, patch) => {
+    const prev = get().sprints.find((sp) => sp.id === id);
+    set((s) => ({ sprints: optimisticUpdate(s.sprints, id, { ...patch, updated_at: new Date().toISOString() }) }));
+
+    try {
+      const result = await safeMutate(
+        { table: 'sprints', op: 'upsert', payload: { id, ...patch, updated_at: new Date().toISOString() } },
+        () => supabase.from('sprints').update(patch).eq('id', id).select().single()
+      );
+
+      if (result.offline) {
+        toast.info('Saved offline — will sync when connected');
+        cacheInvalidate(`${CACHE_KEY}:*`);
+        return { data: { ...prev, ...patch } };
+      }
+
+      cacheInvalidate(`${CACHE_KEY}:*`);
+      set((s) => ({ sprints: s.sprints.map((sp) => (sp.id === id ? result.data : sp)) }));
+      return { data: result.data };
+    } catch (err) {
+      set((s) => ({ sprints: rollbackUpdate(s.sprints, id, prev), error: err.message }));
+      toast.error(err.message);
+      return { error: err.message };
+    }
   },
 
-  /** @param {string} id */
-  delete: async (id) => {
-    const { error } = await supabase.from('sprints').delete().eq('id', id);
-    if (error) throw new Error(error.message);
-    set((s) => ({ sprints: s.sprints.filter((sp) => sp.id !== id) }));
+  // ─── DELETE ────────────────────────────────────────────────────────────────
+
+  deleteSprint: async (id) => {
+    const prev = get().sprints;
+    set((s) => ({ sprints: optimisticRemove(s.sprints, id) }));
+
+    try {
+      const result = await safeMutate(
+        { table: 'sprints', op: 'delete', payload: { id } },
+        () => supabase.from('sprints').delete().eq('id', id)
+      );
+
+      if (result.offline) {
+        toast.info('Delete saved offline — will sync when connected');
+        cacheInvalidate(`${CACHE_KEY}:*`);
+        return { success: true };
+      }
+
+      cacheInvalidate(`${CACHE_KEY}:*`);
+      return { success: true };
+    } catch (err) {
+      set({ sprints: rollbackRemove(null, prev), error: err.message });
+      toast.error(err.message);
+      return { error: err.message };
+    }
   },
+
+  // ─── CUSTOM ACTIONS ────────────────────────────────────────────────────────
 
   /** Start a sprint — sets status to active and start_date to today */
   start: async (id) => {
-    return get().update(id, {
+    return get().updateSprint(id, {
       status: 'active',
       start_date: new Date().toISOString().split('T')[0],
     });
@@ -76,13 +148,21 @@ export const useSprintStore = create((set, get) => ({
    * @param {string} id
    */
   complete: async (id) => {
-    return get().update(id, {
+    return get().updateSprint(id, {
       status: 'completed',
       end_date: new Date().toISOString().split('T')[0],
     });
   },
 
-  getById: (id) => get().sprints.find((s) => s.id === id) ?? null,
+  // ─── HELPERS & ALIASES ─────────────────────────────────────────────────────
 
+  getById: (id) => get().sprints.find((s) => s.id === id) ?? null,
   getActive: () => get().sprints.find((s) => s.status === 'active') ?? null,
+  clearError: () => set({ error: null }),
+
+  // Backward Compatibility Aliases
+  fetch: () => get().fetchSprints(),
+  create: (payload) => get().addSprint(payload).then((r) => { if (r.error) throw new Error(r.error); return r.data; }),
+  update: (id, payload) => get().updateSprint(id, payload).then((r) => { if (r.error) throw new Error(r.error); return r.data; }),
+  delete: (id) => get().deleteSprint(id).then(r => { if (r.error) throw new Error(r.error); return r.success; }),
 }));
