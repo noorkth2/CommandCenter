@@ -2,7 +2,7 @@ import { Sparkles } from 'lucide-react';
 import Button from '../ui/Button';
 
 /**
- * AI Generate button — consistent CTA for triggering Claude generation.
+ * AI Generate button — consistent CTA for triggering AI report generation.
  *
  * @param {{ onClick: () => void, loading?: boolean, label?: string, disabled?: boolean, size?: 'sm'|'md' }} props
  */

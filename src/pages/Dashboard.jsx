@@ -164,7 +164,7 @@ export default function Dashboard() {
   const recentDeployments = deployments.slice(0, 3);
 
   return (
-    <div className="animate-fade-in space-y-6 pb-12">
+    <div className="animate-fade-in space-y-4 pb-12">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -232,7 +232,7 @@ export default function Dashboard() {
             <div
               key={i}
               onClick={() => navigate(card.path)}
-              className={`card p-5 cursor-pointer flex items-center justify-between transition-all duration-200 ${card.glow} hover:-translate-y-0.5`}
+              className={`card p-5 cursor-pointer flex items-center justify-between transition-all duration-200 h-full ${card.glow} hover:-translate-y-0.5 hover:shadow-elevated`}
             >
               <div className="space-y-2">
                 <span className="text-xs font-semibold text-text-muted">{card.title}</span>
@@ -248,9 +248,9 @@ export default function Dashboard() {
       </div>
 
       {/* Grid: Sprint Overview & Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Active Sprint Milestone Card (1/3 cols) */}
-        <div className="card p-5 space-y-4 flex flex-col justify-between h-[340px]">
+        <div className="card p-5 space-y-4 flex flex-col justify-between min-h-[300px]">
           <div>
             <div className="flex items-center justify-between border-b border-border pb-3">
               <span className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
@@ -313,7 +313,7 @@ export default function Dashboard() {
         </div>
 
         {/* Issue Status Chart (2/3 cols) */}
-        <div className="card p-5 h-[340px] lg:col-span-2 space-y-3 flex flex-col">
+        <div className="card p-5 min-h-[300px] lg:col-span-2 space-y-3 flex flex-col">
           <span className="text-xs font-semibold text-text-primary">Issue Distribution by Status</span>
           <div className="flex-1 w-full min-h-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -338,9 +338,9 @@ export default function Dashboard() {
       </div>
 
       {/* Grid: Velocity & Burndown Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Velocity Chart */}
-        <div className="card p-5 h-[300px] space-y-3 flex flex-col">
+        <div className="card p-5 min-h-[280px] space-y-3 flex flex-col">
           <div className="flex items-center gap-2 border-b border-border pb-3">
             <TrendingUp size={15} className="text-brand-purple" />
             <span className="text-xs font-semibold text-text-primary">Sprint Velocity</span>
@@ -374,7 +374,7 @@ export default function Dashboard() {
         </div>
 
         {/* Burndown Chart */}
-        <div className="card p-5 h-[300px] space-y-3 flex flex-col">
+        <div className="card p-5 min-h-[280px] space-y-3 flex flex-col">
           <div className="flex items-center gap-2 border-b border-border pb-3">
             <LineChartIcon size={15} className="text-brand-amber" />
             <span className="text-xs font-semibold text-text-primary">Sprint Burndown</span>
@@ -425,9 +425,9 @@ export default function Dashboard() {
       </div>
 
       {/* Grid: Deployment Activity & Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left 2 Cols: Deployment activity */}
-        <div className="card p-5 h-[320px] lg:col-span-2 space-y-3 flex flex-col">
+        <div className="card p-5 min-h-[280px] lg:col-span-2 space-y-3 flex flex-col">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-text-primary">Recent Deployment Pipeline Activity</span>
             <span className="text-[10px] text-text-muted">Stability Index: 100%</span>
@@ -469,7 +469,7 @@ export default function Dashboard() {
         </div>
 
         {/* Right 1 Col: Urgent critical issues feed */}
-        <div className="card p-5 h-[320px] space-y-3 flex flex-col justify-between">
+        <div className="card p-5 min-h-[280px] space-y-3 flex flex-col justify-between">
           <div>
             <span className="text-xs font-semibold text-brand-red flex items-center gap-1.5 border-b border-border pb-2.5">
               <AlertCircle size={14} className="text-brand-red animate-pulse" />

@@ -174,15 +174,15 @@ export default function TimeTracking() {
 
       {/* Active Timer Bar */}
       {activeTimer && (
-        <div className="card p-4 border-brand-green/30 bg-brand-green/5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
-              <div>
-                <span className="text-sm font-medium text-text-primary">
+        <div className="card p-4 border-brand-green/30 bg-brand-green/[0.04]">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse flex-shrink-0" />
+              <div className="min-w-0">
+                <span className="text-sm font-medium text-text-primary truncate block">
                   {activeTimer.issues?.title || 'Timer running'}
                 </span>
-                <span className="text-xs text-text-muted ml-2 font-mono">{activeElapsed}</span>
+                <span className="text-xs text-text-muted font-mono">{activeElapsed}</span>
               </div>
             </div>
             <TimerControl
@@ -194,21 +194,22 @@ export default function TimeTracking() {
       )}
 
       {/* Week Navigation */}
-      <div className="card p-3">
-        <div className="flex items-center justify-between">
+      <div className="card px-4 py-3">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <button onClick={prevWeek} className="btn-icon w-7 h-7 cursor-pointer">
+            <button onClick={prevWeek} className="btn-icon w-7 h-7 cursor-pointer" title="Previous week">
               <ChevronLeft size={14} />
             </button>
-            <span className="text-sm font-semibold text-text-primary min-w-[200px] text-center">
+            <span className="text-sm font-semibold text-text-primary min-w-[200px] text-center select-none">
               {format(currentWeekStart, 'MMM d')} — {format(weekEnd, 'MMM d, yyyy')}
             </span>
-            <button onClick={nextWeek} className="btn-icon w-7 h-7 cursor-pointer">
+            <button onClick={nextWeek} className="btn-icon w-7 h-7 cursor-pointer" title="Next week">
               <ChevronRight size={14} />
             </button>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={thisWeek}>This Week</Button>
+            <div className="h-5 w-px bg-border" />
             <span className="text-xs text-text-muted font-mono">
               {formatDuration(weekTotalMinutes)} total
             </span>
@@ -217,7 +218,7 @@ export default function TimeTracking() {
       </div>
 
       {/* Day Columns */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-2">
         {entriesByDay.map(({ date, entries: dayEntries, totalMinutes }) => {
           const dayStr = format(date, 'EEE');
           const dateStr = format(date, 'MMM d');
@@ -225,7 +226,7 @@ export default function TimeTracking() {
           return (
             <div
               key={date.toISOString()}
-              className={`card p-3 space-y-2 ${isToday ? 'ring-1 ring-brand-blue/30' : ''}`}
+              className={`card p-3 space-y-2 ${isToday ? 'ring-1 ring-brand-blue/30' : ''} hover:shadow-sm transition-shadow`}
             >
               <div className="flex items-center justify-between border-b border-border pb-2">
                 <div>

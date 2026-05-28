@@ -1,6 +1,7 @@
 /**
  * electron/ipc/ai.ipc.js
- * Claude API handler. Uses safeStorage for key encryption.
+ * OpenCode Zen API handler (via Anthropic-compatible endpoint).
+ * Uses safeStorage for key encryption.
  * Falls back to mock if no key is configured.
  *
  * safeStorage encrypts using the OS keychain — zero extra deps.
@@ -14,25 +15,30 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { getSupabaseClient } = require('./supabase.ipc');
 const { encrypt, decrypt } = require('./encrypt');
 
+// ─── Configuration ─────────────────────────────────────────────────────────
+
+const ZEN_BASE_URL = 'https://opencode.ai/zen';
+const ZEN_MODEL = 'claude-sonnet-4-6';
+
 // ─── Key Management ────────────────────────────────────────────────────────
 
 /** Thin wrappers for callers that depend on the old ai.ipc.js export surface */
 const encryptApiKey = encrypt;
 const decryptApiKey = decrypt;
 
-async function getClaudeApiKey() {
+async function getZenApiKey() {
   try {
     const client = getSupabaseClient();
     const { data, error } = await client
       .from('settings')
       .select('value')
-      .eq('key', 'claude_api_key')
+      .eq('key', 'zen_api_key')
       .single();
 
     if (error || !data?.value) return null;
     return decryptApiKey(data.value);
   } catch (err) {
-    console.error('[ai.ipc] Failed to load Claude API key:', err.message);
+    console.error('[ai.ipc] Failed to load Zen API key:', err.message);
     return null;
   }
 }
@@ -41,19 +47,19 @@ async function getClaudeApiKey() {
 
 function generateMockReport(type) {
   const mocks = {
-    rca: '**Root Cause Analysis (Mock)**\n\nNo Claude API key configured. Connect your API key in Settings to generate real analysis.',
-    sprint_summary: '**Sprint Summary (Mock)**\n\nNo Claude API key configured. Connect your API key in Settings.',
-    deployment_note: '**Deployment Note (Mock)**\n\nNo Claude API key configured. Connect your API key in Settings.',
-    test_summary: '**Test Summary (Mock)**\n\nNo Claude API key configured. Connect your API key in Settings.',
+    rca: '**Root Cause Analysis (Mock)**\n\nNo AI provider key configured. Add your OpenCode Zen API key in Settings to generate real analysis.',
+    sprint_summary: '**Sprint Summary (Mock)**\n\nNo AI provider key configured. Add your OpenCode Zen API key in Settings.',
+    deployment_note: '**Deployment Note (Mock)**\n\nNo AI provider key configured. Add your OpenCode Zen API key in Settings.',
+    test_summary: '**Test Summary (Mock)**\n\nNo AI provider key configured. Add your OpenCode Zen API key in Settings.',
   };
-  return mocks[type] ?? '**Mock Report**\n\nConfigure your Claude API key in Settings to enable AI reports.';
+  return mocks[type] ?? '**Mock Report**\n\nConfigure your OpenCode Zen API key in Settings to enable AI reports.';
 }
 
 // ─── Main Handler ──────────────────────────────────────────────────────────
 
 async function handleAiGenerate(prompt, type) {
   try {
-    const apiKey = await getClaudeApiKey();
+    const apiKey = await getZenApiKey();
 
     if (!apiKey || apiKey.trim() === '') {
       return { content: generateMockReport(type), mock: true };
@@ -61,11 +67,12 @@ async function handleAiGenerate(prompt, type) {
 
     const anthropic = new Anthropic({
       apiKey,
-      maxRetries: 3, // automatic backoff on transient failures
+      baseURL: ZEN_BASE_URL,
+      maxRetries: 3,
     });
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: ZEN_MODEL,
       max_tokens: 1024,
       messages: [{ role: 'user', content: prompt }],
     });
@@ -77,8 +84,7 @@ async function handleAiGenerate(prompt, type) {
 
     return { content, mock: false };
   } catch (err) {
-    // Strip the key from error messages before logging
-    const safeMessage = err.message?.replace(/sk-ant-[\w-]+/g, '[REDACTED]') ?? 'Unknown error';
+    const safeMessage = err.message?.replace(/(sk-[a-z0-9-]+|oc[a-z0-9_-]+)/gi, '[REDACTED]') ?? 'Unknown error';
     console.error('[ai.ipc] Error:', safeMessage);
     return { content: null, error: safeMessage };
   }

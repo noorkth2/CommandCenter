@@ -393,7 +393,7 @@ export default function Sprints() {
                         <p className="text-xs">No AI summary generated for this active sprint yet.</p>
                         <p className="text-[10px] max-w-xs mx-auto">
                           Click **Generate** to automatically analyze and summarize completed tasks in
-                          this sprint via Claude AI.
+                           this sprint via AI report generation.
                         </p>
                       </div>
                     )}

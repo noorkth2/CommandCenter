@@ -57,7 +57,7 @@ export default function TopBar({ onOpenPalette }) {
       </div>
 
       {/* Right-side actions */}
-      <div className="flex items-center gap-2 flex-shrink-0 no-drag">
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 no-drag">
         {/* Active timer indicator */}
         {activeTimer && timerElapsed && (
           <button
@@ -77,7 +77,7 @@ export default function TopBar({ onOpenPalette }) {
         {/* Global search hint */}
         <button
           onClick={onOpenPalette}
-          className="hidden sm:flex items-center gap-2 h-8 px-3
+          className="hidden lg:flex items-center gap-2 h-8 px-3
                      bg-bg-elevated border border-border rounded text-xs text-text-muted
                      cursor-pointer hover:border-border-strong transition-colors"
         >
@@ -88,7 +88,7 @@ export default function TopBar({ onOpenPalette }) {
 
         {/* Sync status indicator */}
         <div
-          className={`flex items-center gap-1.5 h-8 px-3 rounded border ${hasConflicts
+          className={`flex items-center gap-1.5 h-8 px-2 sm:px-3 rounded border ${hasConflicts
               ? 'border-brand-red/30 bg-brand-red/10'
               : pendingCount > 0
                 ? 'border-brand-amber/30 bg-brand-amber/10'
@@ -105,7 +105,7 @@ export default function TopBar({ onOpenPalette }) {
             <span className="w-1.5 h-1.5 rounded-full bg-brand-green" />
           )}
 
-          <span className="text-xs text-text-muted">
+          <span className="text-xs text-text-muted hidden sm:inline">
             {isSyncing
               ? 'Syncing…'
               : hasConflicts
@@ -118,7 +118,7 @@ export default function TopBar({ onOpenPalette }) {
           {pendingCount > 0 && !isSyncing && (
             <button
               onClick={manualSync}
-              className="ml-1 text-text-muted hover:text-text-primary transition-colors"
+              className="ml-0.5 text-text-muted hover:text-text-primary transition-colors"
               title="Sync now"
             >
               <RefreshCw size={11} />

@@ -1,7 +1,7 @@
 # CommandCenter — Complete Project Reference & Dependency Graph
 
 > **Purpose:** Drop this file into any AI chat to give full context about the CommandCenter project.  
-> **Generated from:** Source analysis of `/CommandCenter` workspace (v1.0.5)
+> **Generated from:** Source analysis of `/CommandCenter` workspace (v1.0.6)
 
 ---
 
@@ -12,12 +12,12 @@
 | Property | Value |
 |---|---|
 | App ID | `com.commandcenter.app` |
-| Version | `1.0.5` |
+| Version | `1.0.6` |
 | Entry (Electron) | `electron/main.js` |
 | Entry (Renderer) | `src/main.jsx` → `src/App.jsx` |
 | Auth | Supabase Google OAuth (allowlist-gated) |
 | Database | Supabase (PostgreSQL) — hosted |
-| AI Engine | Anthropic Claude (`claude-sonnet-4-20250514`) |
+| AI Engine | OpenCode Zen (`claude-sonnet-4-6` via Anthropic-compatible endpoint `https://opencode.ai/zen/v1`) |
 | Email | Nodemailer via SMTP (credentials stored in DB) |
 | Native Notifications | Electron Notification API (OS-native) |
 | Build tool | Vite 6 + electron-builder 25 |
@@ -25,6 +25,8 @@
 | State Management | Zustand 5 |
 | Routing | React Router DOM 6 (HashRouter) |
 | Testing | Vitest 4 + jsdom (64 tests across 5 files) |
+| UI Polish | v1.0.6 — responsive layout pass across all major pages (consistent card heights via `min-h`, compressed spacing `gap-6→gap-4`, TopBar overflow handling, Import visual progress indicator) |
+| AI Provider | v1.0.6 — switched from direct Anthropic Claude API to OpenCode Zen gateway (`claude-sonnet-4-6` via `https://opencode.ai/zen/v1`); API key renamed to `zen_api_key` |
 
 ---
 
@@ -77,10 +79,15 @@
                      │ time_entries │
                     └─────────────┘
                            │
-                    ┌──────▼──────┐
-                    │  Anthropic  │
-                    │ Claude API  │
-                    └─────────────┘
+                     ┌──────────────┐
+                     │ OpenCode Zen │
+                     │   Gateway    │
+                     └──────┬───────┘
+                            │
+                     ┌──────▼──────┐
+                     │ Model Backend│
+                     │ (Claude/GPT) │
+                     └─────────────┘
 ```
 
 ---
@@ -180,8 +187,8 @@
 | File | Purpose |
 |---|---|
 | `Layout.jsx` | Shell: `<Sidebar>` + `<TopBar>` + `<Outlet>` + `<NotificationGenerator>` + `<ConflictModalManager>` |
-| `Sidebar.jsx` | 12 nav links, user profile card, logout button; reads session context |
-| `TopBar.jsx` | Page title bar, notification bell, running timer indicator, global search (⌘K), sync status badge |
+| `Sidebar.jsx` | 13 nav links (Dashboard, Board, Projects, Issues, QA, Deployments, Sprints, Automations, AI Reports, Import, Time Tracking, Settings), user profile card, logout button; reads session context |
+| `TopBar.jsx` | Page title bar, notification bell, running timer indicator, global search (⌘K, hidden <lg), sync status badge (text hidden <sm), responsive compact layout for narrow windows |
 
 
 #### `src/components/shared/`
@@ -233,8 +240,8 @@
 
 | File | Route | Supabase Tables Used |
 |---|---|---|
-| `Dashboard.jsx` | `/dashboard` | `projects`, `issues`, `deployments`, `sprints` |
-| `Board.jsx` | `/board` | `issues`, `sprints`, `projects` — sprint-focused Kanban with DnD |
+| `Dashboard.jsx` | `/dashboard` | `projects`, `issues`, `deployments`, `sprints` — metric cards with velocity/burndown/status Recharts, `min-h` cards fill grid rows evenly |
+| `Board.jsx` | `/board` | `issues`, `sprints`, `projects` — 7-column Kanban with DnD, WIP limits, min-w-[240px] columns, sticky empty states |
 | `Products.jsx` | `/products` | `products` |
 | `Clients.jsx` | `/clients` | `clients`, `projects` |
 | `Projects.jsx` | `/projects` | `projects`, `clients`, `products` |
@@ -245,8 +252,8 @@
 | `Automations.jsx` | `/automations` | `automations` |
 | `AIReports.jsx` | `/ai-reports` | `ai_reports` |
 | `Settings.jsx` | `/settings` | `settings` (via `window.electron.settings`) — also has Workspace management UI |
-| `Import.jsx` | `/import` | All tables — multi-step JSON/CSV/Jira import wizard |
-| `TimeTracking.jsx` | `/time` | `time_entries`, `issues` — week view, timer, CSV export |
+| `Import.jsx` | `/import` | All tables — 4-step wizard (numbered progress bar, source cards, dashed drop zone, sticky conflict table, results summary) |
+| `TimeTracking.jsx` | `/time` | `time_entries`, `issues` — week view (7-column day grid shared xl→1), timer, CSV export, compact nav |
 | `Login.jsx` | *(pre-auth)* | Supabase Auth (Google OAuth) |
 | `Setup.jsx` | *(pre-config)* | None — shown if `.env` is unconfigured |
 | `AccessDenied.jsx` | *(pre-auth)* | None — shown if email not in allowlist |
@@ -435,7 +442,7 @@ sequenceDiagram
     participant P as preload.js (contextBridge)
     participant M as main.js (IPC handlers)
     participant S as Supabase
-    participant C as Claude API
+    participant C as OpenCode Zen
     participant E as Email (SMTP)
     participant OS as OS Keychain
 
@@ -649,8 +656,8 @@ All routes are rendered inside `HashRouter` (Electron-compatible).
 | Path | Component | Description |
 |---|---|---|
 | `/` | → redirect | Redirects to `/dashboard` |
-| `/dashboard` | `Dashboard.jsx` | Overview stats, velocity chart, burndown chart, sprint overview, deployment activity, critical attention feed |
-| `/board` | `Board.jsx` | Sprint-focused Kanban with drag-and-drop, WIP limits, sprint selector, quick-create |
+| `/dashboard` | `Dashboard.jsx` | Overview stats (4 metric cards), velocity bar chart, burndown line chart, issue distribution, sprint overview, deployment activity area chart, critical attention feed — `min-h` cards fill evenly |
+| `/board` | `Board.jsx` | Sprint-focused 7-column Kanban with DnD, WIP limits (5/4/3), sprint selector dropdown, quick-create dialog, empty states |
 | `/products` | `Products.jsx` | Product catalogue CRUD |
 | `/clients` | `Clients.jsx` | Client management CRUD |
 | `/projects` | `Projects.jsx` | Projects kanban/table CRUD |
@@ -660,9 +667,9 @@ All routes are rendered inside `HashRouter` (Electron-compatible).
 | `/sprints` | `Sprints.jsx` | Sprint management + AI summary generation |
 | `/automations` | `Automations.jsx` | Automation rule builder + manual trigger |
 | `/ai-reports` | `AIReports.jsx` | AI-generated report viewer + editor |
-| `/time` | `TimeTracking.jsx` | Week view, start/stop timer, manual log, CSV export |
-| `/import` | `Import.jsx` | Multi-step wizard: JSON backup, CSV issues/QA, Jira CSV |
-| `/settings` | `Settings.jsx` | SMTP, Claude API key, workspace manager, feature flags |
+| `/time` | `TimeTracking.jsx` | Week view (responsive 7→1 column grid), start/stop timer, manual log dialog, CSV export, compact navigation bar |
+| `/import` | `Import.jsx` | 4-step wizard with visual progress indicator: source selection cards, file upload (dashed drop zone), conflict review with sticky table, results summary |
+| `/settings` | `Settings.jsx` | SMTP config, Claude API key, workspace manager (add/switch/remove), feature flags |
 
 Pre-auth screens (not in HashRouter):
 - `Setup.jsx` — shown when `.env` is missing/unconfigured
@@ -680,8 +687,9 @@ Page (e.g. Issues.jsx)
               └── PROMPTS[type](data)  ← builds prompt string
                     └── window.electron.ai.generate(prompt, type)  ← IPC
                           └── electron/ipc/ai.ipc.js → handleAiGenerate()
-                                ├── getClaudeApiKey()  ← reads from settings table
-                                ├── IF key present: Anthropic SDK call
+                                ├── getZenApiKey()  ← reads 'zen_api_key' from settings table
+                                ├── IF key present: Anthropic SDK → Zen baseURL (https://opencode.ai/zen/v1)
+                                │   └── model: 'claude-sonnet-4-6'
                                 └── IF no key: generateMockReport()  ← offline fallback
                           └── returns { content, error }
         └── supabase.from('ai_reports').insert({ type, title, content, is_draft: true })
@@ -781,7 +789,7 @@ All stores write **directly to Supabase** from the renderer using `src/lib/supab
 
 | Key | Purpose |
 |---|---|
-| `claude_api_key` | Anthropic API key for AI report generation (encrypted via `safeStorage` before storage) |
+| `zen_api_key` | OpenCode Zen API key for AI report generation (encrypted via `safeStorage` before storage) — get yours at `opencode.ai/auth` |
 | `smtp_host` | SMTP server hostname |
 | `smtp_port` | SMTP port (default 587) |
 | `smtp_user` | SMTP username / from email |
@@ -802,7 +810,7 @@ All stores write **directly to Supabase** from the renderer using `src/lib/supab
 | `react-router-dom` | ^6.30.1 | Client-side routing |
 | `zustand` | ^5.0.4 | Global state management |
 | `@supabase/supabase-js` | ^2.49.4 | Database client (renderer + main) |
-| `@anthropic-ai/sdk` | ^0.36.3 | Claude AI (main process only) |
+| `@anthropic-ai/sdk` | ^0.36.3 | AI provider SDK (main process only) — points at OpenCode Zen `https://opencode.ai/zen/v1` |
 | `nodemailer` | ^6.10.1 | Email sending (main process only) |
 | `node-cron` | ^3.0.3 | Scheduled jobs (main process only) |
 | `lucide-react` | ^0.511.0 | Icon library |
@@ -866,7 +874,7 @@ VITE_APP_VERSION=1.0.5
 ## 17. Security Design Notes
 
 - **No Node.js APIs in renderer** — `nodeIntegration: false`, `contextIsolation: true`
-- **API keys never in renderer** — Claude key and SMTP password only accessed in main process via `settings` table query
+- **API keys never in renderer** — Zen API key and SMTP password only accessed in main process via `settings` table query
 - **Secrets sanitized in logs** — `ai.ipc.js` and `mailer.js` strip credentials from error messages before logging
 - **OAuth via loopback** — Google auth callback on `localhost:54321` (no deep links), server auto-closes after 1s
 - **Access control** — hardcoded email allowlist in `App.jsx`; unauthorized users see `AccessDenied` page

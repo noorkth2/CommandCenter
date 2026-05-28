@@ -191,7 +191,7 @@ export default function Issues() {
     });
     setGeneratingRca(false);
     if (report) toast.success('RCA draft saved to AI Reports');
-    else toast.error('RCA generation failed — check your Claude API key in Settings');
+    else toast.error('RCA generation failed — check your AI provider key in Settings');
   };
 
   const handleCreateQA = async () => {

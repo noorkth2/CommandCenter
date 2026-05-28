@@ -247,16 +247,21 @@ export default function Board() {
           ))}
         </div>
       ) : !selectedSprint ? (
-        <div className="card p-12 text-center">
-          <AlertCircle size={32} className="mx-auto mb-3 text-text-muted opacity-40" />
-          <p className="text-sm text-text-secondary">Select a sprint above to view its board</p>
-          <p className="text-xs text-text-muted mt-1">Issues are grouped by status column</p>
+        <div className="card p-16 text-center">
+          <div className="w-12 h-12 rounded-xl bg-bg-elevated border border-border flex items-center justify-center mx-auto mb-4">
+            <AlertCircle size={24} className="text-text-muted opacity-40" />
+          </div>
+          <p className="text-sm text-text-primary font-medium mb-1">Select a sprint</p>
+          <p className="text-xs text-text-muted">Choose a sprint above to view its board columns</p>
         </div>
       ) : sprintIssues.length === 0 ? (
-        <div className="card p-12 text-center">
-          <AlertCircle size={32} className="mx-auto mb-3 text-text-muted opacity-40" />
-          <p className="text-sm text-text-secondary">No issues in this sprint</p>
-          <Button variant="primary" size="sm" onClick={() => { setNewStatus('backlog'); setPanelOpen(true); }} className="mt-3">
+        <div className="card p-16 text-center">
+          <div className="w-12 h-12 rounded-xl bg-bg-elevated border border-border flex items-center justify-center mx-auto mb-4">
+            <AlertCircle size={24} className="text-text-muted opacity-40" />
+          </div>
+          <p className="text-sm text-text-primary font-medium mb-1">No issues in this sprint</p>
+          <p className="text-xs text-text-muted mb-4">Add your first issue to get started</p>
+          <Button variant="primary" size="sm" onClick={() => { setNewStatus('backlog'); setPanelOpen(true); }}>
             <Plus size={14} /> Create First Issue
           </Button>
         </div>
@@ -274,7 +279,7 @@ export default function Board() {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`kanban-column flex-shrink-0 ${snapshot.isDraggingOver ? 'drag-over rounded-lg' : ''}`}
+                      className={`kanban-column flex-shrink-0 min-w-[240px] ${snapshot.isDraggingOver ? 'drag-over rounded-lg ring-1 ring-brand-blue/30' : ''}`}
                     >
                       <div className="kanban-column-header">
                         <div className="flex items-center gap-2">
@@ -310,7 +315,7 @@ export default function Board() {
                                 ref={drag.innerRef}
                                 {...drag.draggableProps}
                                 {...drag.dragHandleProps}
-                                className={`kanban-card ${snap.isDragging ? 'shadow-elevated rotate-1 scale-[1.02]' : ''}`}
+                                className={`kanban-card transition-all duration-150 ${snap.isDragging ? 'shadow-elevated rotate-1 scale-[1.02]' : 'hover:border-brand-blue/30 hover:shadow-sm'}`}
                                 onClick={() => navigate(`/issues`)}
                               >
                                 <p className="text-sm text-text-primary font-medium leading-snug line-clamp-2 mb-2">

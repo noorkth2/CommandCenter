@@ -25,7 +25,7 @@ import Input from '../components/ui/Input';
 import { useWorkspaceStore } from '../store/useWorkspaceStore';
 
 const schema = z.object({
-  claude_api_key: z.string().optional(),
+  zen_api_key: z.string().optional(),
   smtp_host: z.string().optional(),
   smtp_port: z.string().optional(),
   smtp_user: z.string().optional(),
@@ -59,7 +59,7 @@ export default function Settings() {
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      claude_api_key: '',
+      zen_api_key: '',
       smtp_host: '',
       smtp_port: '587',
       smtp_user: '',
@@ -84,7 +84,7 @@ export default function Settings() {
       setLoading(true);
       try {
         const keys = [
-          'claude_api_key',
+          'zen_api_key',
           'smtp_host',
           'smtp_port',
           'smtp_user',
@@ -336,26 +336,26 @@ export default function Settings() {
         {/* ── Left Column ─────────────────────────────────────────────────── */}
         <div className="space-y-6">
 
-          {/* Card: Claude AI */}
+          {/* Card: AI Provider (OpenCode Zen) */}
           <div className="card p-5 space-y-4">
             <div className="flex items-center gap-3 border-b border-border pb-3">
               <div className="w-8 h-8 rounded bg-brand-purple/10 border border-brand-purple/20 flex items-center justify-center text-brand-purple">
                 <Cpu size={16} />
               </div>
               <div>
-                <h3 className="font-semibold text-text-primary">Claude AI Configuration</h3>
-                <p className="text-2xs text-text-muted">Set up Anthropic API credentials</p>
+                <h3 className="font-semibold text-text-primary">AI Provider — OpenCode Zen</h3>
+                <p className="text-2xs text-text-muted">Set up AI report generation via OpenCode Zen</p>
               </div>
             </div>
 
             <div className="relative">
               <Input
-                label="Claude API Key"
+                label="Zen API Key"
                 type={showApiKey ? 'text' : 'password'}
-                placeholder="sk-ant-..."
-                hint="Used to generate RCAs, daily summaries, and deployment notes."
-                error={errors.claude_api_key?.message}
-                {...register('claude_api_key')}
+                placeholder="oc_..."
+                hint="Used to generate RCAs, daily summaries, and deployment notes. Get your key at opencode.ai/auth"
+                error={errors.zen_api_key?.message}
+                {...register('zen_api_key')}
               />
               <button
                 type="button"

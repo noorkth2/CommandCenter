@@ -17,7 +17,8 @@ contextBridge.exposeInMainWorld('electron', {
   supabase: (method, args) => ipcRenderer.invoke('supabase:query', method, args),
 
   /**
-   * Claude AI — all API calls go through main process.
+   * AI report generation — all API calls go through main process.
+   * Uses OpenCode Zen (Anthropic-compatible endpoint).
    * The API key is retrieved from the settings table, never logged.
    * @param {string} prompt - The prompt text
    * @param {string} type - Report type: 'rca' | 'sprint_summary' | 'deployment_note' | 'test_summary'

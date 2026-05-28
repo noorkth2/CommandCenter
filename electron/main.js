@@ -165,7 +165,7 @@ function registerIpcHandlers() {
     return handleSupabaseIpc(method, args);
   });
 
-  // ── Claude AI ───────────────────────────────────────────────────
+  // ── AI Generation (OpenCode Zen via Anthropic-compatible endpoint) ──
   const { handleAiGenerate } = require('./ipc/ai.ipc');
   ipcMain.handle('ai:generate', async (_event, prompt, type) => {
     return handleAiGenerate(prompt, type);
@@ -186,7 +186,7 @@ function registerIpcHandlers() {
 
   // ── Settings ─────────────────────────────────────────────────────
   const { encrypt, decrypt } = require('./ipc/encrypt');
-  const SECRET_KEYS = new Set(['claude_api_key', 'smtp_pass']);
+  const SECRET_KEYS = new Set(['zen_api_key', 'smtp_pass']);
   const MASKED = '••••••••••••';
 
   ipcMain.handle('settings:get', async (_event, key) => {

@@ -329,23 +329,33 @@ export default function Import() {
         )}
       </div>
 
-      {/* Steps indicator */}
-      <div className="flex items-center gap-2 text-xs">
-        {['Source', 'Preview', 'Review', 'Done'].map((label, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded ${
-              step === i
-                ? 'bg-brand-blue/10 text-brand-blue font-medium'
-                : step > i
-                  ? 'bg-brand-green/10 text-brand-green'
-                  : 'bg-bg-elevated text-text-muted'
-            }`}>
-              {step > i ? <CheckCircle2 size={12} /> : <span>{i + 1}</span>}
-              <span>{label}</span>
+      {/* Steps progress indicator */}
+      <div className="card px-5 py-3">
+        <div className="flex items-center gap-0">
+          {['Choose Source', 'Upload File', 'Review & Import', 'Done'].map((label, i) => (
+            <div key={i} className="flex-1 flex items-center">
+              <div className={`flex items-center gap-2 ${
+                step === i ? 'text-brand-blue' : step > i ? 'text-brand-green' : 'text-text-muted'
+              }`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
+                  step === i
+                    ? 'bg-brand-blue text-white'
+                    : step > i
+                      ? 'bg-brand-green text-white'
+                      : 'bg-bg-elevated border border-border text-text-muted'
+                }`}>
+                  {step > i ? <CheckCircle2 size={12} /> : i + 1}
+                </div>
+                <span className={`text-xs font-medium hidden sm:inline ${step === i ? 'text-text-primary' : ''}`}>
+                  {label}
+                </span>
+              </div>
+              {i < 3 && (
+                <div className={`flex-1 h-px mx-3 ${step > i ? 'bg-brand-green/40' : 'bg-border'}`} />
+              )}
             </div>
-            {i < 3 && <span className="text-text-muted">→</span>}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Step 0: Source Type Selection */}
@@ -358,7 +368,7 @@ export default function Import() {
               <div
                 key={st.id}
                 onClick={() => setSourceType(st.id)}
-                className={`card p-5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
+                className={`card p-5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 h-full ${
                   isSelected ? 'ring-2 ring-brand-blue/50' : ''
                 }`}
               >
@@ -397,7 +407,10 @@ export default function Import() {
 
       {/* Step 1: File Upload (auto-advances to step 2) */}
       {step === 1 && (
-        <div className="card p-12 text-center">
+        <div
+          className="card p-16 text-center cursor-pointer hover:border-brand-blue/30 transition-colors"
+          onClick={() => fileRef.current?.click()}
+        >
           <input
             ref={fileRef}
             type="file"
@@ -405,12 +418,14 @@ export default function Import() {
             onChange={handleFile}
             className="hidden"
           />
-          <Upload size={36} className="mx-auto mb-4 text-text-muted opacity-40" />
-          <p className="text-sm text-text-primary font-medium mb-1">Select a file to import</p>
-          <p className="text-xs text-text-muted mb-4">
-            {sourceType === 'json' ? 'Choose a .json backup file' : 'Choose a .csv file'}
+          <div className="w-14 h-14 rounded-2xl bg-bg-elevated border-2 border-dashed border-border flex items-center justify-center mx-auto mb-5">
+            <Upload size={24} className="text-text-muted opacity-50" />
+          </div>
+          <p className="text-sm text-text-primary font-medium mb-1">Click to select a file</p>
+          <p className="text-xs text-text-muted mb-5">
+            {sourceType === 'json' ? 'Accepts .json backup files' : 'Accepts .csv files'}
           </p>
-          <Button variant="primary" onClick={() => fileRef.current?.click()}>
+          <Button variant="primary" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}>
             Browse Files
           </Button>
         </div>
@@ -422,18 +437,18 @@ export default function Import() {
           {/* Summary bar */}
           {stats && (
             <div className="card p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5 text-xs">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 text-xs">
+                  <div className="flex items-center gap-1.5">
                     <FileJson size={14} className="text-text-muted" />
-                    <span className="text-text-primary">{fileName}</span>
+                    <span className="text-text-primary font-medium">{fileName}</span>
                   </div>
-                  <span className="text-2xs text-text-muted">|</span>
-                  <span className="text-xs text-text-muted">{stats.total} item{stats.total !== 1 ? 's' : ''}</span>
+                  <span className="w-px h-4 bg-border" />
+                  <span className="text-text-muted">{stats.total} item{stats.total !== 1 ? 's' : ''}</span>
                   {stats.conflicts > 0 && (
                     <>
-                      <span className="text-2xs text-text-muted">|</span>
-                      <span className="text-xs text-brand-amber">{stats.conflicts} conflict{stats.conflicts !== 1 ? 's' : ''}</span>
+                      <span className="w-px h-4 bg-border" />
+                      <span className="text-brand-amber">{stats.conflicts} conflict{stats.conflicts !== 1 ? 's' : ''}</span>
                     </>
                   )}
                 </div>
@@ -484,16 +499,16 @@ export default function Import() {
           {parsedData.type !== 'json' && (
             <div className="card overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-border bg-bg-elevated">
-                      <th className="text-left px-4 py-2.5 text-text-muted font-medium w-8"></th>
-                      <th className="text-left px-4 py-2.5 text-text-muted font-medium">Title</th>
-                      <th className="text-left px-4 py-2.5 text-text-muted font-medium">Status</th>
-                      <th className="text-left px-4 py-2.5 text-text-muted font-medium">Priority</th>
-                      <th className="text-left px-4 py-2.5 text-text-muted font-medium">Status</th>
-                    </tr>
-                  </thead>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border bg-bg-elevated sticky top-0">
+                          <th className="text-left px-4 py-2.5 text-text-muted font-medium w-8"></th>
+                          <th className="text-left px-4 py-2.5 text-text-muted font-medium">Title</th>
+                          <th className="text-left px-4 py-2.5 text-text-muted font-medium">Status</th>
+                          <th className="text-left px-4 py-2.5 text-text-muted font-medium">Priority</th>
+                          <th className="text-left px-4 py-2.5 text-text-muted font-medium">Conflict</th>
+                        </tr>
+                      </thead>
                   <tbody>
                     {parsedData.items.map((item, idx) => (
                       <tr
@@ -552,15 +567,19 @@ export default function Import() {
       {/* Step 3: Results */}
       {step === 3 && results && (
         <div className="space-y-4">
-          <div className="card p-6 text-center space-y-4">
-            {totalFailed === 0 ? (
-              <CheckCircle2 size={40} className="mx-auto text-brand-green" />
-            ) : (
-              <AlertCircle size={40} className="mx-auto text-brand-amber" />
-            )}
+          <div className="card p-8 text-center space-y-5">
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto ${
+              totalFailed === 0 ? 'bg-brand-green/10' : 'bg-brand-amber/10'
+            }`}>
+              {totalFailed === 0 ? (
+                <CheckCircle2 size={32} className="text-brand-green" />
+              ) : (
+                <AlertCircle size={32} className="text-brand-amber" />
+              )}
+            </div>
             <div>
-              <h3 className="text-base font-semibold text-text-primary">Import Complete</h3>
-              <p className="text-sm text-text-secondary mt-1">
+              <h3 className="text-lg font-semibold text-text-primary">Import Complete</h3>
+              <p className="text-sm text-text-secondary mt-1.5">
                 {totalCreated} created, {totalSkipped} skipped, {totalFailed} failed
               </p>
             </div>
@@ -582,7 +601,7 @@ export default function Import() {
                     </div>
                   </div>
                   {r.errors?.length > 0 && (
-                    <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                    <div className="space-y-1 max-h-[120px] overflow-y-auto bg-bg-elevated rounded p-2">
                       {r.errors.map((err, i) => (
                         <p key={i} className="text-2xs text-brand-red">{err}</p>
                       ))}

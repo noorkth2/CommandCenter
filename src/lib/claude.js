@@ -1,6 +1,6 @@
 /**
- * Claude API wrapper for the renderer process.
- * ALL calls go through the Electron IPC bridge — the Claude API key
+ * AI report generation wrapper for the renderer process.
+ * ALL calls go through the Electron IPC bridge — the API key
  * is read in the main process from Supabase settings, never in the renderer.
  */
 
@@ -81,7 +81,7 @@ Max 100 words.
 };
 
 /**
- * Generates an AI report by calling Claude through the IPC bridge.
+ * Generates an AI report by calling the AI provider (OpenCode Zen) through the IPC bridge.
  *
  * @param {ReportType} type
  * @param {object} data - The entity (issue, sprint issues array, deployment, qa items)
