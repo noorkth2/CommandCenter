@@ -30,34 +30,34 @@ const schema = z.object({
 // ─── Color cyclic config for dynamic feel ──────────────────────────────────────
 const PRODUCT_COLORS = [
   {
-    color: 'text-brand-blue',
-    bg: 'bg-brand-blue/10',
-    border: 'border-brand-blue/25',
-    dot: 'bg-brand-blue',
+    color: 'text-accent',
+    bg: 'bg-accent/10',
+    border: 'border-accent/25',
+    dot: 'bg-accent',
   },
   {
-    color: 'text-brand-purple',
-    bg: 'bg-brand-purple/10',
-    border: 'border-brand-purple/25',
-    dot: 'bg-brand-purple',
+    color: 'text-accent',
+    bg: 'bg-accent/10',
+    border: 'border-accent/25',
+    dot: 'bg-accent',
   },
   {
-    color: 'text-brand-green',
-    bg: 'bg-brand-green/10',
-    border: 'border-brand-green/25',
-    dot: 'bg-brand-green',
+    color: 'text-success',
+    bg: 'bg-success/10',
+    border: 'border-success/25',
+    dot: 'bg-success',
   },
   {
-    color: 'text-brand-amber',
-    bg: 'bg-brand-amber/10',
-    border: 'border-brand-amber/25',
-    dot: 'bg-brand-amber',
+    color: 'text-warning',
+    bg: 'bg-warning/10',
+    border: 'border-warning/25',
+    dot: 'bg-warning',
   },
   {
-    color: 'text-brand-red',
-    bg: 'bg-brand-red/10',
-    border: 'border-brand-red/25',
-    dot: 'bg-brand-red',
+    color: 'text-danger',
+    bg: 'bg-danger/10',
+    border: 'border-danger/25',
+    dot: 'bg-danger',
   },
 ];
 
@@ -214,7 +214,7 @@ export default function Clients() {
                     <p className="text-xs text-text-muted">No clients yet</p>
                     <button
                       onClick={openCreate}
-                      className="text-xs text-brand-blue hover:underline mt-1"
+                      className="text-xs text-accent hover:underline mt-1"
                     >
                       Add one
                     </button>
@@ -229,7 +229,7 @@ export default function Clients() {
                         <div key={client.id} className="card">
                           {/* Client Row */}
                           <div
-                            className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-bg-hover transition-colors group"
+                            className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-bg-elevated transition-colors group"
                             onClick={() => toggleExpanded(client.id)}
                           >
                             <div
@@ -290,7 +290,7 @@ export default function Clients() {
                                     <div
                                       key={proj.id}
                                       onClick={() => navigate('/projects')}
-                                      className={`flex items-center gap-3 px-4 py-2.5 hover:bg-bg-hover transition-colors cursor-pointer ${
+                                      className={`flex items-center gap-3 px-4 py-2.5 hover:bg-bg-elevated transition-colors cursor-pointer ${
                                         pIdx === clientProjects.length - 1 ? 'rounded-b-lg' : ''
                                       }`}
                                     >

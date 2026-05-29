@@ -39,12 +39,12 @@ VITE_APP_VERSION=1.0.0`;
       <div className="absolute top-0 left-0 right-0 h-14 drag-region z-10" />
 
       {/* Background ambient glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-blue/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/3 w-[300px] h-[300px] bg-brand-purple/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 left-1/3 w-[300px] h-[300px] bg-accent/5 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="w-full max-w-2xl bg-bg-surface border border-border rounded-xl shadow-overlay p-8 relative overflow-hidden animate-scale-in">
+      <div className="w-full max-w-2xl bg-bg-surface border border-border rounded-xl p-8 relative overflow-hidden animate-scale-in">
         {/* Glow indicator at the top */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-blue via-brand-purple to-brand-green" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent via-accent to-success" />
 
         {/* Title / Logo */}
         <div className="flex items-center gap-3 mb-6">
@@ -57,9 +57,9 @@ VITE_APP_VERSION=1.0.0`;
 
         <div className="space-y-6">
           {/* Status warning card */}
-          <div className="p-4 bg-brand-amber/10 border border-brand-amber/20 rounded-lg flex items-start gap-3">
-            <AlertTriangle size={18} className="text-brand-amber flex-shrink-0 mt-0.5" />
-            <div className="text-xs text-brand-amber leading-relaxed">
+          <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg flex items-start gap-3">
+            <AlertTriangle size={18} className="text-warning flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-warning leading-relaxed">
               <strong>Database Connection Missing:</strong> No valid Supabase credentials were found in your <code className="px-1.5 py-0.5 rounded bg-bg-base border border-border text-text-primary">.env</code> file. Follow the steps below to connect your local environment.
             </div>
           </div>
@@ -69,7 +69,7 @@ VITE_APP_VERSION=1.0.0`;
             {/* Step 1 */}
             <div className="flex gap-4">
               <div className="flex flex-col items-center">
-                <div className="w-6 h-6 rounded-full bg-brand-blue/20 border border-brand-blue/40 flex items-center justify-center text-xs font-semibold text-brand-blue">
+                <div className="w-6 h-6 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-xs font-semibold text-accent">
                   1
                 </div>
                 <div className="w-0.5 h-full bg-border mt-2" />
@@ -77,7 +77,7 @@ VITE_APP_VERSION=1.0.0`;
               <div className="flex-1 pb-4">
                 <h3 className="text-sm font-semibold text-text-primary">Create a Supabase Project</h3>
                 <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                  Go to <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-brand-blue hover:underline">supabase.com</a>, sign in or sign up, and create a new project. Give it a name like <code className="text-brand-purple">command-center</code>.
+                  Go to <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">supabase.com</a>, sign in or sign up, and create a new project. Give it a name like <code className="text-accent">command-center</code>.
                 </p>
               </div>
             </div>
@@ -85,7 +85,7 @@ VITE_APP_VERSION=1.0.0`;
             {/* Step 2 */}
             <div className="flex gap-4">
               <div className="flex flex-col items-center">
-                <div className="w-6 h-6 rounded-full bg-brand-blue/20 border border-brand-blue/40 flex items-center justify-center text-xs font-semibold text-brand-blue">
+                <div className="w-6 h-6 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-xs font-semibold text-accent">
                   2
                 </div>
                 <div className="w-0.5 h-full bg-border mt-2" />
@@ -106,12 +106,12 @@ VITE_APP_VERSION=1.0.0`;
                     className="h-6 px-2 text-2xs"
                     onClick={() => copyToClipboard(sqlLocation, setCopiedSql)}
                   >
-                    {copiedSql ? <Check size={11} className="text-brand-green" /> : <Copy size={11} />}
+                    {copiedSql ? <Check size={11} className="text-success" /> : <Copy size={11} />}
                     <span className="text-[10px]">{copiedSql ? 'Copied Path' : 'Copy Path'}</span>
                   </Button>
                 </div>
                 <p className="text-xs text-text-secondary mt-2 leading-relaxed">
-                  Paste the SQL into the editor and click <strong>Run</strong>. This will set up the tables (<code className="text-brand-purple">projects</code>, <code className="text-brand-purple">issues</code>, <code className="text-brand-purple">qa_items</code>, etc.) and pre-seed built-in automation rules.
+                  Paste the SQL into the editor and click <strong>Run</strong>. This will set up the tables (<code className="text-accent">projects</code>, <code className="text-accent">issues</code>, <code className="text-accent">qa_items</code>, etc.) and pre-seed built-in automation rules.
                 </p>
               </div>
             </div>
@@ -119,7 +119,7 @@ VITE_APP_VERSION=1.0.0`;
             {/* Step 3 */}
             <div className="flex gap-4">
               <div className="flex flex-col items-center">
-                <div className="w-6 h-6 rounded-full bg-brand-blue/20 border border-brand-blue/40 flex items-center justify-center text-xs font-semibold text-brand-blue">
+                <div className="w-6 h-6 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-xs font-semibold text-accent">
                   3
                 </div>
               </div>
@@ -129,7 +129,7 @@ VITE_APP_VERSION=1.0.0`;
                   <Key size={13} className="text-text-muted" />
                 </h3>
                 <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                  Go to <strong>Project Settings → API</strong> in your Supabase dashboard. Copy your <strong>Project URL</strong> and <strong>Anon Public Key</strong>, then paste them into your <code className="text-brand-purple">.env</code> file:
+                  Go to <strong>Project Settings → API</strong> in your Supabase dashboard. Copy your <strong>Project URL</strong> and <strong>Anon Public Key</strong>, then paste them into your <code className="text-accent">.env</code> file:
                 </p>
 
                 <div className="mt-3 relative rounded-lg border border-border overflow-hidden bg-bg-base font-mono">
@@ -140,7 +140,7 @@ VITE_APP_VERSION=1.0.0`;
                       className="text-text-secondary hover:text-text-primary transition-colors"
                       aria-label="Copy environment template"
                     >
-                      {copiedEnv ? <Check size={14} className="text-brand-green" /> : <Copy size={14} />}
+                      {copiedEnv ? <Check size={14} className="text-success" /> : <Copy size={14} />}
                     </button>
                   </div>
                   <pre className="p-4 text-2xs leading-relaxed text-text-primary overflow-x-auto">
@@ -155,14 +155,14 @@ VITE_APP_VERSION=1.0.0`;
         {/* Footer Actions */}
         <div className="flex items-center justify-between mt-8 pt-5 border-t border-border">
           <div className="flex items-center gap-2 text-text-muted">
-            <RefreshCw size={13} className="animate-spin text-brand-blue" />
+            <RefreshCw size={13} className="animate-spin text-accent" />
             <span className="text-2xs">Waiting for valid settings...</span>
           </div>
           <Button
             variant="primary"
             size="md"
             onClick={handleRestartInfo}
-            className="glow-blue flex items-center gap-1.5"
+            className="flex items-center gap-1.5"
           >
             <CheckCircle2 size={15} />
             How to Apply & Restart

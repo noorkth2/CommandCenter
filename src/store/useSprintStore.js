@@ -147,10 +147,18 @@ export const useSprintStore = create((set, get) => ({
    * Caller is responsible for moving unfinished issues.
    * @param {string} id
    */
-  complete: async (id) => {
+  complete: async (id, sprintIssues = [], plannedPoints = 0) => {
+    const completedCount = sprintIssues.filter(i => i.status === 'done').length;
+    const planned = plannedPoints || sprintIssues.length;
+    const velocity = planned > 0 ? Number((completedCount / planned).toFixed(2)) : completedCount;
+    
     return get().updateSprint(id, {
       status: 'completed',
       end_date: new Date().toISOString().split('T')[0],
+      planned_points: planned,
+      completed_points: completedCount,
+      velocity,
+      velocity_snapshot_at: new Date().toISOString(),
     });
   },
 

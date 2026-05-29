@@ -16,7 +16,7 @@ const Textarea = forwardRef(function Textarea(
       {label && (
         <label htmlFor={textareaId} className="form-label">
           {label}
-          {props.required && <span className="text-brand-red ml-0.5">*</span>}
+          {props.required && <span className="text-danger ml-0.5">*</span>}
         </label>
       )}
       <textarea
@@ -24,7 +24,7 @@ const Textarea = forwardRef(function Textarea(
         id={textareaId}
         rows={rows}
         className={`textarea-base ${
-          error ? 'border-brand-red focus:border-brand-red focus:ring-brand-red/30' : ''
+          error ? 'border-danger focus:border-danger focus:ring-danger/30' : ''
         } ${className}`}
         {...props}
       />

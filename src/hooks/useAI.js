@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { generateReport } from '../lib/claude';
+import { generateReport, generateTriage } from '../lib/claude';
 import { supabase } from '../lib/supabase';
 
 /**
@@ -23,6 +23,7 @@ export function useAI() {
     setError(null);
     try {
       const { content, error: aiError } = await generateReport(type, data);
+      // generateReport always falls back to local templates so aiError should be rare
       if (aiError) throw new Error(aiError);
       if (!content) throw new Error('No content returned from AI');
 
@@ -53,6 +54,7 @@ export function useAI() {
   /**
    * Generate a report and update an existing record field (e.g., sprint.ai_summary).
    * Does NOT save a separate ai_reports row.
+   * Falls back to local templates automatically if no API key is configured.
    *
    * @param {'rca'|'sprint_summary'|'deployment_note'|'test_summary'} type
    * @param {object} data
@@ -63,6 +65,7 @@ export function useAI() {
     setError(null);
     try {
       const { content, error: aiError } = await generateReport(type, data);
+      // generateReport always falls back to local templates so aiError should be rare
       if (aiError) throw new Error(aiError);
       if (!content) throw new Error('No content returned from AI');
       return content;
@@ -74,5 +77,20 @@ export function useAI() {
     }
   }, []);
 
-  return { generate, generateInline, generating, error };
+  const triage = useCallback(async (issues) => {
+    setGenerating(true);
+    setError(null);
+    try {
+      const { data, error: aiError } = await generateTriage(issues);
+      if (aiError) throw new Error(aiError);
+      return data;
+    } catch (err) {
+      setError(err.message);
+      return null;
+    } finally {
+      setGenerating(false);
+    }
+  }, []);
+
+  return { generate, generateInline, triage, generating, error };
 }

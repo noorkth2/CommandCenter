@@ -10,6 +10,7 @@ import { useIssueStore } from '../store/useIssueStore';
 import { useProjectStore } from '../store/useProjectStore';
 import { useSprintStore } from '../store/useSprintStore';
 import { useQAStore } from '../store/useQAStore';
+import { useIssueLinkStore } from '../store/useIssueLinkStore';
 import { useAI } from '../hooks/useAI';
 import { useAutomations } from '../hooks/useAutomations';
 import { useTimeTrackingStore } from '../store/useTimeTrackingStore';
@@ -38,14 +39,14 @@ const BOARD_COLUMNS = [
 
 const COLUMN_COLORS = {
   backlog: 'text-text-muted',
-  todo: 'text-brand-blue',
-  in_progress: 'text-brand-purple',
-  testing: 'text-brand-amber',
-  uat: 'text-brand-amber',
-  ready_to_deploy: 'text-brand-green',
-  production: 'text-brand-green',
-  monitoring: 'text-brand-blue',
-  done: 'text-brand-green',
+  todo: 'text-accent',
+  in_progress: 'text-accent',
+  testing: 'text-warning',
+  uat: 'text-warning',
+  ready_to_deploy: 'text-success',
+  production: 'text-success',
+  monitoring: 'text-accent',
+  done: 'text-success',
 };
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -73,7 +74,7 @@ export default function Issues() {
   const { projects, fetch: fetchProjects } = useProjectStore();
   const { sprints, fetch: fetchSprints } = useSprintStore();
   const { create: createQA } = useQAStore();
-  const { generate, generating } = useAI();
+  const { generate, triage: runAiTriage, generating: aiGenerating } = useAI();
   const { trigger } = useAutomations();
   const toast = useToast();
 
@@ -85,6 +86,17 @@ export default function Issues() {
   const [generatingRca, setGeneratingRca] = useState(false);
   const [issueTimeEntries, setIssueTimeEntries] = useState([]);
   const [timeTotal, setTimeTotal] = useState(0);
+
+  // Issue relationship linking states
+  const { links: linkedIssues, fetchLinksForIssue, addLink, removeLink } = useIssueLinkStore();
+  const [linkIssueId, setLinkIssueId] = useState('');
+  const [linkType, setLinkType] = useState('related');
+
+  // AI Triage states
+  const [triageDialogOpen, setTriageDialogOpen] = useState(false);
+  const [triageResults, setTriageResults] = useState([]);
+  const [triaging, setTriaging] = useState(false);
+  const [selectedTriageIds, setSelectedTriageIds] = useState(new Set());
 
   const { register, handleSubmit, reset, watch, control, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
@@ -129,8 +141,12 @@ export default function Issues() {
       setIssueTimeEntries(entries);
       setTimeTotal(entries.reduce((s, e) => s + (e.duration_minutes || 0), 0));
     } catch { /* silent */ }
+    // Load issue links
+    try {
+      await fetchLinksForIssue(issue.id);
+    } catch { /* silent */ }
     setPanelOpen(true);
-  }, [reset]);
+  }, [reset, fetchLinksForIssue]);
 
   const onSubmit = async (data) => {
     try {
@@ -185,13 +201,13 @@ export default function Issues() {
     if (!editing) return;
     setGeneratingRca(true);
     const report = await generate('rca', editing, {
-      title: `RCA: ${editing.title}`,
+      title: `Incident Report: ${editing.title}`,
       related_id: editing.id,
       related_type: 'issue',
     });
     setGeneratingRca(false);
-    if (report) toast.success('RCA draft saved to AI Reports');
-    else toast.error('RCA generation failed — check your AI provider key in Settings');
+    if (report) toast.success('Incident report saved to AI Reports');
+    else toast.error('RCA generation failed — please try again');
   };
 
   const handleCreateQA = async () => {
@@ -227,6 +243,53 @@ export default function Issues() {
     }
   };
 
+  const backlogIssues = issues.filter((i) => i.status === 'backlog');
+
+  const handleRunTriage = async () => {
+    setTriaging(true);
+    try {
+      const suggestions = await runAiTriage(backlogIssues);
+      if (suggestions && Array.isArray(suggestions)) {
+        const mapped = suggestions.map((s) => {
+          const original = backlogIssues.find((bi) => bi.id === s.id);
+          return {
+            ...s,
+            title: original ? original.title : 'Unknown Issue',
+          };
+        });
+        setTriageResults(mapped);
+        setSelectedTriageIds(new Set(mapped.map(m => m.id)));
+      } else {
+        toast.error('AI Triage failed to return valid suggestions.');
+      }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setTriaging(false);
+    }
+  };
+
+  const handleApplyTriage = async () => {
+    let successCount = 0;
+    try {
+      for (const result of triageResults) {
+        if (selectedTriageIds.has(result.id)) {
+          await update(result.id, {
+            priority: result.suggested_priority,
+            team: result.suggested_team,
+          });
+          successCount++;
+        }
+      }
+      toast.success(`Successfully triaged ${successCount} issues!`);
+      setTriageDialogOpen(false);
+      setTriageResults([]);
+      setSelectedTriageIds(new Set());
+    } catch (err) {
+      toast.error(`Error triaging: ${err.message}`);
+    }
+  };
+
   const currentLabels = watchedLabels
     ? watchedLabels.split(',').map(l => l.trim()).filter(Boolean)
     : [];
@@ -244,13 +307,16 @@ export default function Issues() {
         <div className="flex items-center gap-2">
           {/* View toggle */}
           <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
-            <button onClick={() => setView('board')} className={`btn-icon w-7 h-7 ${view === 'board' ? 'bg-bg-hover text-text-primary' : ''}`} title="Board view">
+            <button onClick={() => setView('board')} className={`btn-icon w-7 h-7 ${view === 'board' ? 'bg-bg-elevated text-text-primary' : ''}`} title="Board view">
               <Columns size={13} />
             </button>
-            <button onClick={() => setView('list')} className={`btn-icon w-7 h-7 ${view === 'list' ? 'bg-bg-hover text-text-primary' : ''}`} title="List view">
+            <button onClick={() => setView('list')} className={`btn-icon w-7 h-7 ${view === 'list' ? 'bg-bg-elevated text-text-primary' : ''}`} title="List view">
               <List size={13} />
             </button>
           </div>
+          <Button variant="secondary" size="sm" onClick={() => { setTriageDialogOpen(true); setTriageResults([]); setSelectedTriageIds(new Set()); }}>
+            <Sparkles size={13} className="mr-1" /> AI Triage
+          </Button>
           <Button variant="primary" size="sm" onClick={() => openCreate()}>
             <Plus size={14} /> New Issue
           </Button>
@@ -292,7 +358,7 @@ export default function Issues() {
                                 ref={drag.innerRef}
                                 {...drag.draggableProps}
                                 {...drag.dragHandleProps}
-                                className={`kanban-card ${snap.isDragging ? 'shadow-elevated rotate-1 scale-[1.02]' : ''}`}
+                                className={`kanban-card ${snap.isDragging ? 'rotate-1 scale-[1.02]' : ''}`}
                                 onClick={() => openEdit(issue)}
                               >
                                 <p className="text-sm text-text-primary font-medium leading-snug line-clamp-2 mb-2">
@@ -301,7 +367,7 @@ export default function Issues() {
                                 <div className="flex flex-wrap gap-1 mb-2">
                                   <PriorityBadge priority={issue.priority} />
                                   {(issue.labels ?? []).slice(0, 2).map(l => (
-                                    <span key={l} className="badge bg-bg-hover text-text-muted border-border text-xs">{l}</span>
+                                    <span key={l} className="badge bg-bg-elevated text-text-muted border-border text-xs">{l}</span>
                                   ))}
                                   {(issue.labels ?? []).length > 2 && (
                                     <span className="text-2xs text-text-muted">+{issue.labels.length - 2}</span>
@@ -356,7 +422,7 @@ export default function Issues() {
                         {(issue.labels ?? []).length > 0 && (
                           <div className="flex gap-1 mt-1 flex-wrap">
                             {issue.labels.slice(0, 3).map(l => (
-                              <span key={l} className="badge bg-bg-hover text-text-muted border-border">{l}</span>
+                              <span key={l} className="badge bg-bg-elevated text-text-muted border-border">{l}</span>
                             ))}
                           </div>
                         )}
@@ -403,9 +469,7 @@ export default function Issues() {
             <div className="flex items-center gap-2">
               {editing && (
                 <>
-                  {isCritical && (
-                    <AIGenerateButton onClick={handleGenerateRCA} loading={generatingRca} label="Generate RCA" />
-                  )}
+                  <AIGenerateButton onClick={handleGenerateRCA} loading={generatingRca} label="Generate RCA" />
                   <Button variant="ghost" size="sm" onClick={handleCreateQA}>
                     <Copy size={13} /> Create QA Entry
                   </Button>
@@ -508,6 +572,99 @@ export default function Issues() {
             )}
           </div>
         )}
+
+        {/* Linked Issues Section */}
+        {editing && (
+          <div className="mt-6 pt-4 border-t border-border space-y-3">
+            <h4 className="text-xs font-semibold text-text-primary">Linked Issues</h4>
+            
+            {/* Add Link form */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <Select
+                  label="Link to Issue"
+                  placeholder="Select issue to link..."
+                  value={linkIssueId}
+                  onChange={(e) => setLinkIssueId(e.target.value)}
+                  options={issues
+                    .filter((i) => i.id !== editing.id)
+                    .map((i) => ({ value: i.id, label: `[${i.status.toUpperCase()}] ${i.title}` }))}
+                />
+              </div>
+              <div className="w-40">
+                <Select
+                  label="Relationship"
+                  value={linkType}
+                  onChange={(e) => setLinkType(e.target.value)}
+                  options={[
+                    { value: 'related', label: 'Related to' },
+                    { value: 'blocks', label: 'Blocks' },
+                    { value: 'blocked_by', label: 'Blocked by' },
+                    { value: 'duplicate', label: 'Duplicate of' },
+                  ]}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={async () => {
+                  if (!linkIssueId) return;
+                  await addLink(editing.id, linkIssueId, linkType);
+                  setLinkIssueId('');
+                }}
+              >
+                <Plus size={13} /> Link
+              </Button>
+            </div>
+
+            {/* List of links */}
+            {linkedIssues.length > 0 ? (
+              <div className="space-y-1.5 max-h-[150px] overflow-y-auto pt-2">
+                {linkedIssues.map((link) => {
+                  const isSource = link.issue_id === editing.id;
+                  const relatedIssue = isSource ? link.linked_issue : link.issue;
+                  let displayType = link.link_type;
+                  if (!isSource) {
+                    if (link.link_type === 'blocks') displayType = 'blocked_by';
+                    else if (link.link_type === 'blocked_by') displayType = 'blocks';
+                  }
+
+                  const badgeColors = {
+                    blocks: 'bg-danger/10 text-danger border-danger/20',
+                    blocked_by: 'bg-warning/10 text-warning border-warning/20',
+                    duplicate: 'bg-text-muted/10 text-text-muted border-border',
+                    related: 'bg-accent/10 text-accent border-accent/20',
+                  };
+
+                  return (
+                    <div key={link.id} className="flex items-center justify-between p-2 rounded bg-bg-elevated border border-border hover:border-text-muted transition-colors">
+                      <div className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" onClick={() => openEdit(relatedIssue)}>
+                        <span className={`badge text-3xs uppercase font-mono px-1.5 py-0.5 border ${badgeColors[displayType] || 'bg-bg-elevated'}`}>
+                          {displayType.replace('_', ' ')}
+                        </span>
+                        <span className="text-2xs text-text-primary hover:underline truncate flex-1">
+                          {relatedIssue?.title ?? 'Unknown Issue'}
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-danger/60 hover:text-danger p-1"
+                        onClick={() => removeLink(link.id)}
+                      >
+                        <Trash2 size={12} />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-2xs text-text-muted">No linked issues</p>
+            )}
+          </div>
+        )}
       </Dialog>
 
       <ConfirmDialog
@@ -518,6 +675,137 @@ export default function Issues() {
         message="This will permanently delete the issue and unlink any associated QA items."
         loading={deleting}
       />
+
+      {/* dialog: AI Triage */}
+      <Dialog
+        open={triageDialogOpen}
+        onClose={() => setTriageDialogOpen(false)}
+        title="AI Backlog Triage"
+        subtitle="Analyze backlog issues and automatically suggest priority and team assignments"
+        width="800px"
+        footer={
+          <div className="flex justify-between items-center w-full">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleRunTriage}
+              loading={triaging}
+              disabled={backlogIssues.length === 0}
+            >
+              <Sparkles size={13} className="mr-1" /> Run AI Triage
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setTriageDialogOpen(false)}>Cancel</Button>
+              <Button
+                variant="primary"
+                onClick={handleApplyTriage}
+                disabled={selectedTriageIds.size === 0}
+              >
+                Apply Selected ({selectedTriageIds.size})
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-text-secondary">
+            This tool uses AI to scan all issues currently in the <strong>Backlog</strong> and suggest a priority level and responsible team.
+          </p>
+
+          {backlogIssues.length === 0 ? (
+            <div className="p-8 text-center bg-bg-elevated border border-border rounded-lg text-xs text-text-muted">
+              No issues in the backlog to triage.
+            </div>
+          ) : triageResults.length === 0 ? (
+            <div className="p-12 text-center bg-bg-elevated border border-border rounded-lg space-y-2">
+              <Sparkles size={28} className="mx-auto text-accent opacity-55 animate-pulse" />
+              <p className="text-xs text-text-secondary">Click "Run AI Triage" to begin analysis.</p>
+              <p className="text-3xs text-text-muted">Found {backlogIssues.length} backlog issues ready for triage.</p>
+            </div>
+          ) : (
+            <div className="table-wrapper max-h-[350px] overflow-y-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th className="w-8">
+                      <input
+                        type="checkbox"
+                        checked={selectedTriageIds.size === triageResults.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedTriageIds(new Set(triageResults.map(r => r.id)));
+                          } else {
+                            setSelectedTriageIds(new Set());
+                          }
+                        }}
+                        className="rounded border-border text-accent focus:ring-accent/30"
+                      />
+                    </th>
+                    <th>Issue Title</th>
+                    <th>Suggested Priority</th>
+                    <th>Suggested Team</th>
+                    <th>Confidence</th>
+                    <th>Reasoning</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {triageResults.map((item) => {
+                    const isSelected = selectedTriageIds.has(item.id);
+                    return (
+                      <tr
+                        key={item.id}
+                        className={`cursor-pointer ${isSelected ? 'bg-accent/5' : ''}`}
+                        onClick={() => {
+                          const next = new Set(selectedTriageIds);
+                          if (next.has(item.id)) next.delete(item.id);
+                          else next.add(item.id);
+                          setSelectedTriageIds(next);
+                        }}
+                      >
+                        <td onClick={e => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              const next = new Set(selectedTriageIds);
+                              if (next.has(item.id)) next.delete(item.id);
+                              else next.add(item.id);
+                              setSelectedTriageIds(next);
+                            }}
+                            className="rounded border-border text-accent focus:ring-accent/30"
+                          />
+                        </td>
+                        <td>
+                          <span className="text-xs text-text-primary block truncate max-w-xs">{item.title}</span>
+                        </td>
+                        <td>
+                          <PriorityBadge priority={item.suggested_priority} />
+                        </td>
+                        <td>
+                          <span className="badge text-3xs uppercase bg-bg-elevated border-border text-text-secondary font-normal">
+                            {item.suggested_team}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`text-2xs font-semibold ${
+                            item.confidence >= 0.8 ? 'text-success' : item.confidence >= 0.5 ? 'text-warning' : 'text-text-muted'
+                          }`}>
+                            {Math.round(item.confidence * 100)}%
+                          </span>
+                        </td>
+                        <td>
+                          <span className="text-3xs text-text-secondary leading-normal">{item.reasoning}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </Dialog>
     </div>
   );
 }

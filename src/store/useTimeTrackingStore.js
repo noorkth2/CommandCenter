@@ -1,5 +1,14 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { toast } from '../components/ui/Toast';
+import {
+  tempId,
+  optimisticAdd,
+  optimisticRemove,
+  rollbackAdd,
+  rollbackRemove,
+  safeMutate,
+} from '../lib/storeUtils';
 
 export const useTimeTrackingStore = create((set, get) => ({
   entries: [],
@@ -44,6 +53,10 @@ export const useTimeTrackingStore = create((set, get) => ({
     return data ?? [];
   },
 
+  // ─── START TIMER ──────────────────────────────────────────────────────────
+  // Timer operations are NOT offline-queued — replaying a start_timer offline
+  // would produce incorrect timestamps. They fail loudly so the user knows.
+
   startTimer: async (issueId) => {
     set({ loading: true, error: null });
     try {
@@ -76,6 +89,7 @@ export const useTimeTrackingStore = create((set, get) => ({
       return data;
     } catch (err) {
       set({ error: err.message, loading: false });
+      toast.error(`Timer failed to start: ${err.message}`);
       throw err;
     }
   },
@@ -87,6 +101,9 @@ export const useTimeTrackingStore = create((set, get) => ({
     const now = new Date().toISOString();
     const startedAt = new Date(active.started_at).getTime();
     const durationMinutes = Math.round((Date.now() - startedAt) / 60000);
+
+    // Optimistically clear the active timer
+    set({ activeTimer: null });
 
     try {
       const { data, error } = await supabase
@@ -102,62 +119,96 @@ export const useTimeTrackingStore = create((set, get) => ({
       if (error) throw error;
 
       set((s) => ({
-        activeTimer: null,
         entries: s.entries.map((e) => (e.id === active.id ? { ...e, ...data } : e)),
       }));
 
       return data;
     } catch (err) {
-      set({ error: err.message });
+      // Rollback — restore the active timer so user can retry
+      set({ activeTimer: active, error: err.message });
+      toast.error(`Failed to stop timer: ${err.message}`);
       throw err;
     }
   },
 
-  logManual: async ({ issue_id, duration_minutes, date, description }) => {
-    set({ loading: true, error: null });
-    try {
-      const now = new Date().toISOString();
-      const { data, error } = await supabase
-        .from('time_entries')
-        .insert({
-          issue_id,
-          duration_minutes,
-          date: date || now.slice(0, 10),
-          description: description || null,
-          started_at: now,
-          ended_at: now,
-        })
-        .select('*, issues(title)')
-        .single();
+  // ─── LOG MANUAL ENTRY (with optimistic update + safeMutate) ───────────────
 
-      if (error) throw error;
+  logManual: async ({ issue_id, duration_minutes, date, description }) => {
+    const tid = tempId();
+    const now = new Date().toISOString();
+    const optimisticEntry = {
+      issue_id,
+      duration_minutes,
+      date: date || now.slice(0, 10),
+      description: description || null,
+      started_at: now,
+      ended_at: now,
+    };
+
+    set((s) => ({ entries: optimisticAdd(s.entries, optimisticEntry, tid) }));
+
+    try {
+      const result = await safeMutate(
+        {
+          table: 'time_entries',
+          op: 'upsert',
+          payload: {
+            ...optimisticEntry,
+            id: tid,
+          },
+        },
+        () =>
+          supabase
+            .from('time_entries')
+            .insert(optimisticEntry)
+            .select('*, issues(title)')
+            .single()
+      );
+
+      if (result.offline) {
+        toast.info('Time entry saved offline — will sync when connected');
+        return { data: { ...optimisticEntry, id: tid } };
+      }
 
       set((s) => ({
-        entries: [data, ...s.entries],
+        entries: s.entries.map((e) => (e.id === tid ? result.data : e)),
         loading: false,
       }));
 
-      return data;
+      return result.data;
     } catch (err) {
-      set({ error: err.message, loading: false });
+      set((s) => ({ entries: rollbackAdd(s.entries, tid), error: err.message }));
+      toast.error(err.message);
       throw err;
     }
   },
+
+  // ─── DELETE ENTRY (with optimistic remove + safeMutate) ───────────────────
 
   deleteEntry: async (id) => {
     const prev = get().entries;
     set((s) => ({
-      entries: s.entries.filter((e) => e.id !== id),
+      entries: optimisticRemove(s.entries, id),
       activeTimer: s.activeTimer?.id === id ? null : s.activeTimer,
     }));
 
     try {
-      const { error } = await supabase.from('time_entries').delete().eq('id', id);
-      if (error) throw error;
+      const result = await safeMutate(
+        { table: 'time_entries', op: 'delete', payload: { id } },
+        () => supabase.from('time_entries').delete().eq('id', id)
+      );
+
+      if (result.offline) {
+        toast.info('Delete saved offline — will sync when connected');
+        return;
+      }
     } catch (err) {
-      set({ entries: prev, error: err.message });
+      set({ entries: rollbackRemove(null, prev), error: err.message });
+      toast.error(err.message);
     }
   },
+
+  // ─── HELPERS ───────────────────────────────────────────────────────────────
 
   getTotalForDateRange: (startDate, endDate) => {
     const entries = get().entries.filter((e) => {

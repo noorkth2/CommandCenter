@@ -56,7 +56,7 @@ export default function TimerControl({ issueId, issueTitle, size = 'sm' }) {
     return (
       <button
         onClick={handleStop}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-brand-red/15 text-brand-red border border-brand-red/30 hover:bg-brand-red/25 transition-colors cursor-pointer animate-pulse"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25 transition-colors cursor-pointer animate-pulse"
         title="Stop timer"
       >
         <Square size={11} />
@@ -71,8 +71,8 @@ export default function TimerControl({ issueId, issueTitle, size = 'sm' }) {
       disabled={!!activeTimer}
       className={`inline-flex items-center gap-1.5 rounded text-xs font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
         size === 'xs'
-          ? 'px-2 py-1 text-2xs bg-bg-elevated border border-border text-text-muted hover:border-border-strong'
-          : 'px-2.5 py-1.5 bg-brand-green/15 text-brand-green border border-brand-green/30 hover:bg-brand-green/25'
+          ? 'px-2 py-1 text-2xs bg-bg-elevated border border-border text-text-muted hover:border-border-hover'
+          : 'px-2.5 py-1.5 bg-success/15 text-success border border-success/30 hover:bg-success/25'
       }`}
       title={activeTimer ? 'Another timer is running' : 'Start timer'}
     >

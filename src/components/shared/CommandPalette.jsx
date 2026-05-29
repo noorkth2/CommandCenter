@@ -71,7 +71,7 @@ function highlight(text, query) {
   return (
     <>
       {text.slice(0, idx)}
-      <span className="text-brand-blue font-medium">{text.slice(idx, idx + query.length)}</span>
+      <span className="text-accent font-medium">{text.slice(idx, idx + query.length)}</span>
       {text.slice(idx + query.length)}
     </>
   );
@@ -83,7 +83,7 @@ function ResultItem({ icon: Icon, label, sublabel, active, onClick, query }) {
   return (
     <button
       className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-        active ? 'bg-bg-hover' : 'hover:bg-bg-elevated'
+        active ? 'bg-bg-elevated' : 'hover:bg-bg-elevated'
       }`}
       onClick={onClick}
     >

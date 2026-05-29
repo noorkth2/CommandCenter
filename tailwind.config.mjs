@@ -6,26 +6,32 @@ export default {
     extend: {
       colors: {
         bg: {
-          base: '#0e0e10',
-          surface: '#16161a',
-          elevated: '#1e1e24',
-          hover: '#26262e',
+          base: 'rgba(var(--bg-base-rgb), <alpha-value>)',
+          surface: 'rgba(var(--bg-surface-rgb), <alpha-value>)',
+          elevated: 'rgba(var(--bg-elevated-rgb), <alpha-value>)',
         },
         border: {
-          DEFAULT: 'rgba(255,255,255,0.08)',
-          strong: 'rgba(255,255,255,0.14)',
+          DEFAULT: 'rgba(var(--border-rgb), <alpha-value>)',
+          hover: 'rgba(var(--border-hover-rgb), <alpha-value>)',
         },
         text: {
-          primary: '#e8e6f0',
-          secondary: '#8a8799',
-          muted: '#5a5870',
+          primary: 'rgba(var(--text-primary-rgb), <alpha-value>)',
+          secondary: 'rgba(var(--text-secondary-rgb), <alpha-value>)',
+          muted: 'rgba(var(--text-muted-rgb), <alpha-value>)',
         },
-        brand: {
-          blue: '#5b6af8',
-          green: '#3ecf8e',
-          amber: '#f5a623',
-          red: '#e85d4a',
-          purple: '#9d8ff5',
+        accent: {
+          DEFAULT: 'rgba(var(--accent-rgb), <alpha-value>)',
+          hover: 'rgba(var(--accent-hover-rgb), <alpha-value>)',
+          bg: 'rgba(124, 110, 245, 0.12)',
+        },
+        success: 'rgba(var(--success-rgb), <alpha-value>)',
+        warning: 'rgba(var(--warning-rgb), <alpha-value>)',
+        danger: 'rgba(var(--danger-rgb), <alpha-value>)',
+        tint: {
+          neutral: 'rgba(255,255,255,0.03)',
+          green: 'rgba(200,255,200,0.04)',
+          amber: 'rgba(255,240,180,0.05)',
+          purple: 'rgba(220,200,255,0.05)',
         },
       },
       fontFamily: {
@@ -40,6 +46,8 @@ export default {
         md: '16px',
         lg: '18px',
         xl: '22px',
+        '2xl': '24px',
+        '3xl': '32px',
       },
       borderRadius: {
         sm: '4px',
@@ -48,13 +56,9 @@ export default {
         lg: '12px',
         xl: '16px',
       },
-      boxShadow: {
-        card: '0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)',
-        elevated: '0 4px 16px rgba(0,0,0,0.5)',
-        overlay: '0 20px 60px rgba(0,0,0,0.6)',
-      },
-      transitionTimingFunction: {
-        smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      spacing: {
+        sidebar: '200px',
+        topbar: '52px',
       },
     },
   },

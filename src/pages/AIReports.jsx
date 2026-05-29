@@ -19,10 +19,10 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { AI_REPORT_TYPE_LABELS } from '../lib/constants';
 
 const TYPE_COLORS = {
-  rca: 'bg-brand-red/10 text-brand-red border-brand-red/20',
-  sprint_summary: 'bg-brand-purple/10 text-brand-purple border-brand-purple/20',
-  deployment_note: 'bg-brand-blue/10 text-brand-blue border-brand-blue/20',
-  test_summary: 'bg-brand-green/10 text-brand-green border-brand-green/20',
+  rca: 'bg-danger/10 text-danger border-danger/20',
+  sprint_summary: 'bg-accent/10 text-accent border-accent/20',
+  deployment_note: 'bg-accent/10 text-accent border-accent/20',
+  test_summary: 'bg-success/10 text-success border-success/20',
 };
 
 export default function AIReports() {
@@ -205,7 +205,7 @@ export default function AIReports() {
                 onClick={() => setActiveTypeTab(tab.id)}
                 className={`text-2xs px-2.5 py-1 rounded transition-all whitespace-nowrap ${
                   activeTypeTab === tab.id
-                    ? 'bg-brand-blue/15 text-brand-blue border border-brand-blue/30 font-medium'
+                    ? 'bg-accent/15 text-accent border border-accent/30 font-medium'
                     : 'bg-transparent text-text-muted hover:text-text-secondary'
                 }`}
               >
@@ -234,16 +234,16 @@ export default function AIReports() {
                 <div
                   key={report.id}
                   onClick={() => setSelectedReport(report)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all hover:bg-bg-hover ${
+                  className={`p-3 rounded-lg border cursor-pointer transition-all hover:bg-bg-elevated ${
                     selectedReport?.id === report.id
-                      ? 'bg-brand-blue/5 border-brand-blue/30 text-text-primary shadow-sm'
+                      ? 'bg-accent/5 border-accent/30 text-text-primary shadow-sm'
                       : 'bg-bg-surface border-border text-text-secondary'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span
                       className={`badge text-[10px] px-1.5 py-0.5 border ${
-                        TYPE_COLORS[report.type] ?? 'bg-bg-hover text-text-muted border-border'
+                        TYPE_COLORS[report.type] ?? 'bg-bg-elevated text-text-muted border-border'
                       }`}
                     >
                       {AI_REPORT_TYPE_LABELS[report.type] ?? report.type}
@@ -259,9 +259,9 @@ export default function AIReports() {
 
                   <div className="flex items-center gap-1.5 mt-2">
                     {report.is_draft ? (
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-amber animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
                     ) : (
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-green" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-success" />
                     )}
                     <span className="text-[10px] text-text-muted">
                       {report.is_draft ? 'Draft' : 'Sent / Published'}
@@ -303,11 +303,11 @@ export default function AIReports() {
                   >
                     {selectedReport.is_draft ? (
                       <>
-                        <CheckCircle size={13} className="text-brand-green" /> Published
+                        <CheckCircle size={13} className="text-success" /> Published
                       </>
                     ) : (
                       <>
-                        <Clock size={13} className="text-brand-amber" /> Mark Draft
+                        <Clock size={13} className="text-warning" /> Mark Draft
                       </>
                     )}
                   </Button>
@@ -326,8 +326,8 @@ export default function AIReports() {
               </div>
 
               {/* Reader Content Body */}
-              <div className="flex-1 overflow-y-auto px-8 py-6 prose prose-invert max-w-none prose-sm selection:bg-brand-blue/20">
-                <div className="glass border border-border/60 rounded-xl p-6 glow-blue leading-relaxed text-text-secondary text-sm">
+              <div className="flex-1 overflow-y-auto px-8 py-6 prose prose-invert max-w-none prose-sm selection:bg-accent/20">
+                <div className="glass border border-border/60 rounded-xl p-6 leading-relaxed text-text-secondary text-sm">
                   <ReactMarkdown>{selectedReport.content}</ReactMarkdown>
                 </div>
               </div>

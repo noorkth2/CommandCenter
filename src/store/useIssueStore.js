@@ -120,6 +120,21 @@ export const useIssueStore = create((set, get) => ({
 
       cacheInvalidate(`${CACHE_KEY}:*`);
       set((s) => ({ issues: s.issues.map((i) => (i.id === id ? result.data : i)) }));
+
+      // Non-blocking background Jira push status sync
+      if (window.electron?.jira?.pushStatus && result.data?.jira_id && patch.status) {
+        (async () => {
+          try {
+            const pushRes = await window.electron.settings.get('jira_push_status_enabled');
+            if (pushRes?.data === 'true' || pushRes?.data === true) {
+              await window.electron.jira.pushStatus(result.data.jira_id, patch.status);
+            }
+          } catch (e) {
+            console.warn('[useIssueStore] Failed to push status to Jira:', e.message);
+          }
+        })();
+      }
+
       return { data: result.data };
     } catch (err) {
       set((s) => ({ issues: rollbackUpdate(s.issues, id, prev), error: err.message }));

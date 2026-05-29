@@ -186,7 +186,7 @@ function registerIpcHandlers() {
 
   // ── Settings ─────────────────────────────────────────────────────
   const { encrypt, decrypt } = require('./ipc/encrypt');
-  const SECRET_KEYS = new Set(['zen_api_key', 'smtp_pass']);
+  const SECRET_KEYS = new Set(['zen_api_key', 'smtp_pass', 'jira_api_token']);
   const MASKED = '••••••••••••';
 
   ipcMain.handle('settings:get', async (_event, key) => {
@@ -240,20 +240,42 @@ function registerIpcHandlers() {
     const { getSupabaseClient } = require('./ipc/supabase.ipc');
     try {
       const client = getSupabaseClient();
-      const tables = ['products', 'clients', 'projects', 'issues', 'qa_items', 'deployments', 'sprints', 'ai_reports', 'automations'];
+      const tables = [
+        'products', 'clients', 'projects', 'issues', 'qa_items',
+        'deployments', 'sprints', 'ai_reports', 'automations', 'time_entries',
+      ];
+
+      // Fetch all tables in parallel for performance
+      const results = await Promise.all(
+        tables.map(async (table) => {
+          const { data, error } = await client.from(table).select('*');
+          if (error) throw new Error(`Export failed on table "${table}": ${error.message}`);
+          return { table, data };
+        })
+      );
+
       const exported = {};
-      for (const table of tables) {
-        const { data, error } = await client.from(table).select('*');
-        if (error) throw error;
+      let totalRows = 0;
+      for (const { table, data } of results) {
         exported[table] = data;
+        totalRows += data?.length ?? 0;
       }
+
+      // Safety warning for very large exports (>50k rows total)
+      if (totalRows > 50000) {
+        console.warn(`[export:all] Large export: ${totalRows} total rows. Consider archiving old data.`);
+      }
+
       exported._exported_at = new Date().toISOString();
       exported._version = '1.0.0';
+      exported._row_count = totalRows;
       return { data: exported, error: null };
     } catch (err) {
+      console.error('[export:all] Error:', err.message);
       return { data: null, error: err.message };
     }
   });
+
 
   // ── Workspace Management ──────────────────────────────────────────
   const {
@@ -297,6 +319,15 @@ function registerIpcHandlers() {
     } catch (err) {
       return { data: null, error: err.message };
     }
+  });
+
+  // ── Jira Integration ──────────────────────────────────────────────
+  const { syncJira, pushStatus } = require('./ipc/jira.ipc');
+  ipcMain.handle('jira:sync', async () => {
+    return syncJira();
+  });
+  ipcMain.handle('jira:push-status', async (_event, jiraId, ccStatus) => {
+    return pushStatus(jiraId, ccStatus);
   });
 }
 

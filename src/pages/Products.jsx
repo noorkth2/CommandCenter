@@ -28,34 +28,34 @@ const schema = z.object({
 // ─── Color cyclic config for dynamic feel ──────────────────────────────────────
 const PRODUCT_COLORS = [
   {
-    color: 'text-brand-blue',
-    bg: 'bg-brand-blue/10',
-    border: 'border-brand-blue/25',
-    dot: 'bg-brand-blue',
+    color: 'text-accent',
+    bg: 'bg-accent/10',
+    border: 'border-accent/25',
+    dot: 'bg-accent',
   },
   {
-    color: 'text-brand-purple',
-    bg: 'bg-brand-purple/10',
-    border: 'border-brand-purple/25',
-    dot: 'bg-brand-purple',
+    color: 'text-accent',
+    bg: 'bg-accent/10',
+    border: 'border-accent/25',
+    dot: 'bg-accent',
   },
   {
-    color: 'text-brand-green',
-    bg: 'bg-brand-green/10',
-    border: 'border-brand-green/25',
-    dot: 'bg-brand-green',
+    color: 'text-success',
+    bg: 'bg-success/10',
+    border: 'border-success/25',
+    dot: 'bg-success',
   },
   {
-    color: 'text-brand-amber',
-    bg: 'bg-brand-amber/10',
-    border: 'border-brand-amber/25',
-    dot: 'bg-brand-amber',
+    color: 'text-warning',
+    bg: 'bg-warning/10',
+    border: 'border-warning/25',
+    dot: 'bg-warning',
   },
   {
-    color: 'text-brand-red',
-    bg: 'bg-brand-red/10',
-    border: 'border-brand-red/25',
-    dot: 'bg-brand-red',
+    color: 'text-danger',
+    bg: 'bg-danger/10',
+    border: 'border-danger/25',
+    dot: 'bg-danger',
   },
 ];
 
@@ -190,7 +190,7 @@ export default function Products() {
                       <div className={`w-6 h-6 rounded flex items-center justify-center ${colorCfg.bg} border ${colorCfg.border}`}>
                         <Layers size={12} className={colorCfg.color} />
                       </div>
-                      <h3 className="font-semibold text-text-primary tracking-tight text-base group-hover:text-brand-blue transition-colors">
+                      <h3 className="font-semibold text-text-primary tracking-tight text-base group-hover:text-accent transition-colors">
                         {product.name}
                       </h3>
                     </div>
@@ -217,14 +217,14 @@ export default function Products() {
                   {/* Metrics Row */}
                   <div className="grid grid-cols-2 gap-3 p-3 bg-bg-elevated border border-border rounded-lg mb-4">
                     <div className="flex items-center gap-2 cursor-pointer hover:opacity-85" onClick={() => navigate('/clients')}>
-                      <Users size={14} className="text-brand-blue" />
+                      <Users size={14} className="text-accent" />
                       <div>
                         <span className="text-xs font-semibold text-text-primary block">{clientsCount}</span>
                         <span className="text-3xs text-text-muted uppercase tracking-wider block">Clients</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 cursor-pointer hover:opacity-85" onClick={() => navigate('/projects')}>
-                      <FolderKanban size={14} className="text-brand-purple" />
+                      <FolderKanban size={14} className="text-accent" />
                       <div>
                         <span className="text-xs font-semibold text-text-primary block">{projectsCount}</span>
                         <span className="text-3xs text-text-muted uppercase tracking-wider block">Projects</span>
@@ -241,7 +241,7 @@ export default function Products() {
                   ) : (
                     <div className="flex flex-wrap gap-1.5 max-h-[3.5rem] overflow-y-auto pr-1">
                       {clientsList.slice(0, 3).map((c) => (
-                        <span key={c.id} className="text-3xs px-2 py-0.5 rounded bg-bg-hover text-text-secondary border border-border/80">
+                        <span key={c.id} className="text-3xs px-2 py-0.5 rounded bg-bg-elevated text-text-secondary border border-border/80">
                           {c.name}
                         </span>
                       ))}

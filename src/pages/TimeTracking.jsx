@@ -174,10 +174,10 @@ export default function TimeTracking() {
 
       {/* Active Timer Bar */}
       {activeTimer && (
-        <div className="card p-4 border-brand-green/30 bg-brand-green/[0.04]">
+        <div className="card p-4 border-success/30 bg-success/[0.04]">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-3 min-w-0">
-              <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse flex-shrink-0" />
+              <span className="w-2 h-2 rounded-full bg-success animate-pulse flex-shrink-0" />
               <div className="min-w-0">
                 <span className="text-sm font-medium text-text-primary truncate block">
                   {activeTimer.issues?.title || 'Timer running'}
@@ -226,7 +226,7 @@ export default function TimeTracking() {
           return (
             <div
               key={date.toISOString()}
-              className={`card p-3 space-y-2 ${isToday ? 'ring-1 ring-brand-blue/30' : ''} hover:shadow-sm transition-shadow`}
+              className={`card p-3 space-y-2 ${isToday ? 'ring-1 ring-accent/30' : ''} transition-shadow`}
             >
               <div className="flex items-center justify-between border-b border-border pb-2">
                 <div>
@@ -236,7 +236,7 @@ export default function TimeTracking() {
                 {totalMinutes > 0 && (
                   <span className="text-2xs font-mono text-text-muted">{formatDuration(totalMinutes)}</span>
                 )}
-                {isToday && <span className="text-2xs text-brand-blue font-medium">Today</span>}
+                {isToday && <span className="text-2xs text-accent font-medium">Today</span>}
               </div>
 
               <div className="space-y-1.5 min-h-[80px] max-h-[300px] overflow-y-auto">
@@ -252,7 +252,7 @@ export default function TimeTracking() {
                         <div className="min-w-0 flex-1">
                           <button
                             onClick={() => navigate(`/issues`)}
-                            className="text-2xs text-text-primary font-medium truncate block hover:text-brand-blue transition-colors cursor-pointer"
+                            className="text-2xs text-text-primary font-medium truncate block hover:text-accent transition-colors cursor-pointer"
                           >
                             {e.issues?.title || 'Unknown issue'}
                           </button>
@@ -264,7 +264,7 @@ export default function TimeTracking() {
                           <span className="text-2xs font-mono text-text-secondary">{formatDuration(e.duration_minutes)}</span>
                           <button
                             onClick={() => handleDelete(e.id)}
-                            className="p-0.5 rounded text-text-muted opacity-0 group-hover:opacity-100 hover:text-brand-red transition-all cursor-pointer"
+                            className="p-0.5 rounded text-text-muted opacity-0 group-hover:opacity-100 hover:text-danger transition-all cursor-pointer"
                           >
                             <Trash2 size={10} />
                           </button>

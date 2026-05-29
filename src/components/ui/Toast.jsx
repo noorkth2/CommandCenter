@@ -59,10 +59,10 @@ export function ToastProvider({ children }) {
 
 function ToastItem({ toast, onRemove }) {
   const typeConfig = {
-    success: { icon: CheckCircle, colorClass: 'toast-success', iconColor: 'text-brand-green' },
-    error: { icon: XCircle, colorClass: 'toast-error', iconColor: 'text-brand-red' },
-    warning: { icon: AlertTriangle, colorClass: 'toast-warning', iconColor: 'text-brand-amber' },
-    info: { icon: Info, colorClass: 'toast-info', iconColor: 'text-brand-blue' },
+    success: { icon: CheckCircle, colorClass: 'toast-success', iconColor: 'text-success' },
+    error: { icon: XCircle, colorClass: 'toast-error', iconColor: 'text-danger' },
+    warning: { icon: AlertTriangle, colorClass: 'toast-warning', iconColor: 'text-warning' },
+    info: { icon: Info, colorClass: 'toast-info', iconColor: 'text-accent' },
   };
 
   const { icon: Icon, colorClass, iconColor } = typeConfig[toast.type] ?? typeConfig.info;

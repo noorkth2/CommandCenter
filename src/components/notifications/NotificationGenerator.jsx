@@ -19,9 +19,13 @@ export default function NotificationGenerator() {
   const { projects, fetch: fetchProjects } = useProjectStore();
 
   const lastNotifiedRef = useRef(null);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     const run = async () => {
+      // Skip while window is not visible — avoids wasted Supabase queries in background
+      if (document.visibilityState === 'hidden') return;
+
       // Ensure data is loaded
       if (issues.length === 0) await fetchIssues();
       if (qaItems.length === 0) await fetchQA();
@@ -54,10 +58,34 @@ export default function NotificationGenerator() {
       }
     };
 
-    run();
+    const startPolling = () => {
+      if (intervalRef.current) return;
+      run();
+      intervalRef.current = setInterval(run, POLL_INTERVAL);
+    };
 
-    const interval = setInterval(run, POLL_INTERVAL);
-    return () => clearInterval(interval);
+    const stopPolling = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    startPolling();
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []); // Only on mount — stores are the same instance throughout
 
   return null;

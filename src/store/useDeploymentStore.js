@@ -131,6 +131,7 @@ export const useDeploymentStore = create((set, get) => ({
 
   getById: (id) => get().deployments.find((d) => d.id === id) ?? null,
   clearError: () => set({ error: null }),
+  updateChecklist: (id, checklist) => get().updateDeployment(id, { checklist }),
 
   // Backward Compatibility Aliases
   fetch: () => get().fetchDeployments(),

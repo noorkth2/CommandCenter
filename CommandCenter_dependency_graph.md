@@ -1,7 +1,7 @@
 # CommandCenter — Complete Project Reference & Dependency Graph
 
 > **Purpose:** Drop this file into any AI chat to give full context about the CommandCenter project.  
-> **Generated from:** Source analysis of `/CommandCenter` workspace (v1.0.6)
+> **Generated from:** Source analysis of `/CommandCenter` workspace (v1.0.5 package / post-v1.0.6 features merged)
 
 ---
 
@@ -12,7 +12,7 @@
 | Property | Value |
 |---|---|
 | App ID | `com.commandcenter.app` |
-| Version | `1.0.6` |
+| Version | `1.0.5` (package.json) |
 | Entry (Electron) | `electron/main.js` |
 | Entry (Renderer) | `src/main.jsx` → `src/App.jsx` |
 | Auth | Supabase Google OAuth (allowlist-gated) |
@@ -24,9 +24,14 @@
 | UI Framework | React 18 + TailwindCSS 3 |
 | State Management | Zustand 5 |
 | Routing | React Router DOM 6 (HashRouter) |
-| Testing | Vitest 4 + jsdom (64 tests across 5 files) |
-| UI Polish | v1.0.6 — responsive layout pass across all major pages (consistent card heights via `min-h`, compressed spacing `gap-6→gap-4`, TopBar overflow handling, Import visual progress indicator) |
-| AI Provider | v1.0.6 — switched from direct Anthropic Claude API to OpenCode Zen gateway (`claude-sonnet-4-6` via `https://opencode.ai/zen/v1`); API key renamed to `zen_api_key` |
+| Testing | Vitest 4 + jsdom — 5 test files across `store/__tests__/` and `lib/__tests__/` |
+| UI Polish | Responsive layout pass: consistent card heights via `min-h`, compressed spacing, TopBar overflow handling, Import visual progress indicator |
+| AI Provider | Switched from direct Anthropic Claude API to OpenCode Zen gateway (`claude-sonnet-4-6` via `https://opencode.ai/zen/v1`); settings key renamed to `zen_api_key` |
+| Theming | Sidebar dark/light mode toggle — persisted in `localStorage` as `theme` key, applied via `document.documentElement.classList` |
+| Issues Kanban | New `src/components/issues/IssuesKanban.jsx` — DnD kanban for Issues page (reuses `@hello-pangea/dnd`) |
+| Sprint Burndown | New `src/components/sprints/BurndownChart.jsx` — ideal vs. actual burndown chart (Recharts + date-fns) |
+| Offline Queue | `syncQueue.js` expanded with `removeEntry()`, `updateEntry()`, `queueDepth()`, event system (`onSyncEvent`/`emitEvent`) |
+| storeUtils | `safeMutate()` + `isConflictError()` added — network-safe mutation wrapper used by all stores |
 
 ---
 
@@ -39,26 +44,26 @@
 │  ┌──────────────────────────────────────┐  ┌────────────────┐  │
 │  │         Main Process (Node.js)       │  │  Renderer (V8) │  │
 │  │                                      │  │                │  │
-│  │  main.js ──► registerIpcHandlers()   │  │  React 18 App        │  │
-│  │      ├── ipc/supabase.ipc.js         │◄─┤  (Vite bundle)       │  │
-│  │      ├── ipc/ai.ipc.js               │  │                      │  │
-│  │      ├── ipc/workspace.ipc.js        │  │  window.electron     │  │
-│  │      ├── ipc/notification.ipc.js     │  │  (preload API)       │  │
-│  │      ├── ipc/encrypt.js              │  │                      │  │
-│  │      ├── mailer.js                   │  │  Features:           │  │
+│  │  main.js ──► registerIpcHandlers()   │  │  React 18 App  │  │
+│  │      ├── ipc/supabase.ipc.js         │◄─┤  (Vite bundle) │  │
+│  │      ├── ipc/ai.ipc.js               │  │                │  │
+│  │      ├── ipc/workspace.ipc.js        │  │  window.electron│  │
+│  │      ├── ipc/notification.ipc.js     │  │  (preload API) │  │
+│  │      ├── ipc/encrypt.js              │  │                │  │
+│  │      ├── mailer.js                   │  │  Features:     │  │
 │  │      ├── auth.js                     │  │  • Dashboard + Charts│  │
 │  │      ├── automations.js              │  │  • Sprint Board (DnD)│  │
-│  │      └── cron.js                     │  │  • Notifications Hub │  │
-│  │                                      │  │  • Bulk Import Tool  │  │
-│  │  preload.js ──► contextBridge        │  │  • Time Tracking     │  │
-│  └──────────────────────────────────────┘  │  • Workspace Manager │  │
-│                          │                  │  • Command Palette   │  │
-│                    IPC Channels             │  • Conflict Resolver │  │
-│  (supabase:query, ai:generate, email:send,  └──────────────────────┘  │
-│   automation:trigger, settings:get/set,                                │
-│   export:all, auth:start-login-flow,                                   │
-│   workspace:list/add/remove/switch,                                    │
-│   notification:show)                                                   │
+│  │      └── cron.js                     │  │  • Issues Kanban│ │
+│  │                                      │  │  • BurndownChart│ │
+│  │  preload.js ──► contextBridge        │  │  • Notifications Hub│ │
+│  └──────────────────────────────────────┘  │  • Bulk Import Tool│ │
+│                          │                  │  • Time Tracking│ │
+│                    IPC Channels             │  • Workspace Manager│ │
+│  (supabase:query, ai:generate, email:send,  │  • Command Palette│ │
+│   automation:trigger, settings:get/set,     │  • Conflict Resolver│ │
+│   export:all, auth:start-login-flow,        └────────────────┘  │
+│   workspace:list/add/remove/switch,                              │
+│   notification:show)                                             │
 └─────────────────────────────────────────────────────────────────┘
                            │
                     ┌──────▼──────┐
@@ -113,14 +118,14 @@
 | File | Purpose |
 |---|---|
 | `main.js` | App entry point: creates BrowserWindow, loads env, registers IPC handlers, starts cron |
-| `preload.js` | `contextBridge` — exposes `window.electron` API to renderer (secure IPC bridge) |
+| `preload.js` | `contextBridge` — exposes `window.electron` API to renderer (secure IPC bridge); also exposes `window.electron.platform` for macOS-specific UI adjustments |
 | `auth.js` | Local HTTP server (port 54321) for Google OAuth callback flow |
 | `automations.js` | `AutomationEngine` class — evaluates rules and executes actions (QA entry, email, AI report) |
 | `cron.js` | `node-cron` scheduler — built-in daily sprint summary (23:00) + dynamic DB-driven schedules |
 | `mailer.js` | Nodemailer wrapper — reads SMTP credentials from `settings` table, sends emails |
 | `generate-icons.js` | Dev utility — generates app icons for packaging |
 | `ipc/supabase.ipc.js` | Singleton Supabase client for main process; generic `handleSupabaseIpc` proxy; delegates to workspace.ipc for multi-tenant support |
-| `ipc/ai.ipc.js` | `handleAiGenerate` — reads Claude API key from DB, calls Anthropic SDK, offline mock fallback |
+| `ipc/ai.ipc.js` | `handleAiGenerate` — reads Zen API key from DB (`zen_api_key`), calls Anthropic SDK pointed at OpenCode Zen, offline mock fallback |
 | `ipc/encrypt.js` | Shared safeStorage encryption/decryption utilities for main process settings |
 | `ipc/workspace.ipc.js` | Multi-workspace manager — encrypted credential storage (safeStorage), list/add/remove/switch IPC handlers, workspace-aware main process Supabase client |
 | `ipc/notification.ipc.js` | Native OS desktop notification sender via Electron `Notification` API |
@@ -139,17 +144,16 @@
 
 | File | Purpose |
 |---|---|
-| `supabase.js` | Renderer Supabase client singleton + `checkIsConfigured()` |
+| `supabase.js` | Renderer Supabase client singleton + `checkIsConfigured()` + `recreateClient(url, anonKey)` |
 | `claude.js` | Renderer-side prompt templates + `generateReport()` → IPC bridge caller |
-| `storeUtils.js` | Shared optimistic update helpers for all Zustand stores + `safeMutate` network-aware wrapper |
+| `storeUtils.js` | Shared optimistic update helpers for all Zustand stores: `tempId`, `optimisticAdd/Update/Remove`, `rollbackAdd/Update/Remove`; **`safeMutate(meta, fn)`** — network-safe wrapper that enqueues offline mutations; **`isConflictError(err)`** — detects 409/P0001/stale conflicts |
 | `constants.js` | All enums, status labels, color maps, JSDoc type definitions (single source of truth) |
-| `cache.js` | Zero-dependency TTL cache for query result deduplication and invalidation |
-| `syncQueue.js` | Offline-first localStorage-persisted mutation queue with exponential backoff |
+| `cache.js` | Zero-dependency TTL cache for query result deduplication and invalidation; exports `cacheFlush()` |
+| `syncQueue.js` | Offline-first localStorage-persisted mutation queue with exponential backoff; exports `enqueue`, `drainQueue`, `clearQueue`, `getPendingEntries`, `removeEntry`, `updateEntry`, `queueDepth`, `onSyncEvent`; event types: `enqueued`, `drained`, `conflict`, `dropped`, `cleared`, `retrying`; auto-drains on `window.online` event |
 | `importUtils.js` | CSV/Jira parsers, data mappers, conflict detection, import executor (JSON + CSV) |
-| `SyncContext.jsx` | React context exposing pendingCount, isSyncing, conflicts, manualSync, resolveConflict |
+| `SyncContext.jsx` | React context exposing `pendingCount`, `isSyncing`, `conflicts`, `manualSync`, `resolveConflict` |
 
 #### `src/store/` — Zustand Stores (Global State)
-
 
 | File | Supabase Table | Key State |
 |---|---|---|
@@ -157,7 +161,7 @@
 | `useProductStore.js` | `products` | `products[]`, CRUD actions |
 | `useClientStore.js` | `clients` | `clients[]`, CRUD actions |
 | `useProjectStore.js` | `projects` | `projects[]`, CRUD actions |
-| `useIssueStore.js` | `issues` | `issues[]`, filters, CRUD + status transitions |
+| `useIssueStore.js` | `issues` | `issues[]`, filters, CRUD + `transitionStatus()`, `getByProject()`, `getByStatus()`; exports `canTransition()` helper |
 | `useQAStore.js` | `qa_items` | `qaItems[]`, CRUD actions |
 | `useDeploymentStore.js` | `deployments` | `deployments[]`, CRUD actions |
 | `useSprintStore.js` | `sprints` | `sprints[]`, CRUD actions |
@@ -165,6 +169,21 @@
 | `useWorkspaceStore.js` | *(local storage, encrypted)* | `workspaces[]`, `activeId`, `switchWorkspace()`, `addWorkspace()` |
 | `useNotificationStore.js` | *(in-memory, generated from live data)* | `notifications[]`, `unreadCount`, `dismiss()`, `generate()`, `markAllRead()` |
 | `useTimeTrackingStore.js` | `time_entries` | `entries[]`, `activeTimer`, `startTimer()`, `stopTimer()`, `logManual()`, `deleteEntry()` |
+
+#### `src/store/__tests__/` — Store Tests
+
+| File | Coverage |
+|---|---|
+| `useIssueStore.test.js` | `fetchIssues`, `addIssue` (optimistic + rollback + offline enqueue), `updateIssue`, `deleteIssue`, `transitionStatus`, `getByProject`, `getByStatus`, `canTransition` |
+| `useProjectStore.test.js` | `fetchProjects`, `addProject`, `updateProject`, `deleteProject` (optimistic + rollback) |
+
+#### `src/lib/__tests__/` — Lib Tests
+
+| File | Coverage |
+|---|---|
+| `cache.test.js` | TTL cache: set/get, expiry, `cacheFlush`, invalidation |
+| `storeUtils.test.js` | `optimisticAdd/Update/Remove`, `rollbackAdd/Update/Remove`, `safeMutate` (success, network error → enqueue, non-network error → re-throw), `isConflictError` |
+| `syncQueue.test.js` | `enqueue`, `drainQueue` (success, conflict detection, retry with backoff, drop after MAX_RETRIES), `removeEntry`, `updateEntry`, `clearQueue`, `onSyncEvent` events |
 
 #### `src/hooks/` — Custom Hooks
 
@@ -187,9 +206,20 @@
 | File | Purpose |
 |---|---|
 | `Layout.jsx` | Shell: `<Sidebar>` + `<TopBar>` + `<Outlet>` + `<NotificationGenerator>` + `<ConflictModalManager>` |
-| `Sidebar.jsx` | 13 nav links (Dashboard, Board, Projects, Issues, QA, Deployments, Sprints, Automations, AI Reports, Import, Time Tracking, Settings), user profile card, logout button; reads session context |
+| `Sidebar.jsx` | Grouped nav (GENERAL / TOOLS-RESOURCES / SETTINGS), dark/light theme segmented toggle (persisted to `localStorage`), user profile card, logout; reads `window.electron.platform` for macOS traffic-light padding |
 | `TopBar.jsx` | Page title bar, notification bell, running timer indicator, global search (⌘K, hidden <lg), sync status badge (text hidden <sm), responsive compact layout for narrow windows |
 
+#### `src/components/issues/`
+
+| File | Purpose |
+|---|---|
+| `IssuesKanban.jsx` | 9-column drag-and-drop Kanban for the Issues page using `@hello-pangea/dnd`; calls `transitionStatus()` on drop; shows `PriorityBadge`, assignee avatar, and label chips per card |
+
+#### `src/components/sprints/`
+
+| File | Purpose |
+|---|---|
+| `BurndownChart.jsx` | Sprint burndown chart — ideal linear line vs. actual completion line; built with Recharts `LineChart` + `date-fns`; plots actual only up to today; custom tooltip |
 
 #### `src/components/shared/`
 
@@ -245,10 +275,10 @@
 | `Products.jsx` | `/products` | `products` |
 | `Clients.jsx` | `/clients` | `clients`, `projects` |
 | `Projects.jsx` | `/projects` | `projects`, `clients`, `products` |
-| `Issues.jsx` | `/issues` | `issues`, `projects`, `sprints` (+ time_entries in panel) |
+| `Issues.jsx` | `/issues` | `issues`, `projects`, `sprints` (+ time_entries in panel) — now optionally renders `IssuesKanban` for kanban view |
 | `QATracker.jsx` | `/qa` | `qa_items`, `projects`, `issues` |
 | `Deployments.jsx` | `/deployments` | `deployments`, `projects` |
-| `Sprints.jsx` | `/sprints` | `sprints`, `issues` |
+| `Sprints.jsx` | `/sprints` | `sprints`, `issues` — embeds `BurndownChart` per sprint |
 | `Automations.jsx` | `/automations` | `automations` |
 | `AIReports.jsx` | `/ai-reports` | `ai_reports` |
 | `Settings.jsx` | `/settings` | `settings` (via `window.electron.settings`) — also has Workspace management UI |
@@ -279,13 +309,13 @@ SQL migration files for the Supabase database schema.
 ```mermaid
 graph TD
     main["electron/main.js\n(App Entry)"]
-    preload["electron/preload.js\n(contextBridge)"]
+    preload["electron/preload.js\n(contextBridge + platform)"]
     auth["electron/auth.js\n(OAuth Server)"]
     automations["electron/automations.js\n(AutomationEngine)"]
     cron["electron/cron.js\n(node-cron)"]
     mailer["electron/mailer.js\n(Nodemailer)"]
     supabase_ipc["electron/ipc/supabase.ipc.js\n(Main-Process Supabase Client)"]
-    ai_ipc["electron/ipc/ai.ipc.js\n(Claude API)"]
+    ai_ipc["electron/ipc/ai.ipc.js\n(OpenCode Zen API)"]
     workspace_ipc["electron/ipc/workspace.ipc.js\n(Workspace Manager)"]
     notif_ipc["electron/ipc/notification.ipc.js\n(Desktop Notifications)"]
     encrypt["electron/ipc/encrypt.js\n(OS Keychain safeStorage)"]
@@ -322,22 +352,22 @@ graph TD
     mainJsx["src/main.jsx"]
     AppJsx["src/App.jsx\n(Auth Gate + Router)"]
     Layout["components/layout/Layout.jsx"]
-    Sidebar["components/layout/Sidebar.jsx"]
+    Sidebar["components/layout/Sidebar.jsx\n(dark/light toggle)"]
     TopBar["components/layout/TopBar.jsx"]
 
     libSupa["src/lib/supabase.js\n(Renderer Supabase Client)\n+ recreateClient()"]
     libClaude["src/lib/claude.js\n(Prompt Templates + IPC call)"]
-    libStoreUtils["src/lib/storeUtils.js\n(Optimistic Helpers)"]
+    libStoreUtils["src/lib/storeUtils.js\n(Optimistic Helpers\n+ safeMutate + isConflictError)"]
     libConsts["src/lib/constants.js\n(Enums, Types, Colors)"]
     libImport["src/lib/importUtils.js\n(CSV/Jira parsers)"]
-    libCache["src/lib/cache.js\n(TTL cache)"]
-    libQueue["src/lib/syncQueue.js\n(Offline queue)"]
+    libCache["src/lib/cache.js\n(TTL cache + cacheFlush)"]
+    libQueue["src/lib/syncQueue.js\n(Offline queue\n+ event system)"]
 
     authStore["store/useAuthStore.js"]
     prodStore["store/useProductStore.js"]
     clientStore["store/useClientStore.js"]
     projStore["store/useProjectStore.js"]
-    issueStore["store/useIssueStore.js"]
+    issueStore["store/useIssueStore.js\n+ canTransition()"]
     qaStore["store/useQAStore.js"]
     deployStore["store/useDeploymentStore.js"]
     sprintStore["store/useSprintStore.js"]
@@ -355,6 +385,8 @@ graph TD
     timerCtrl["components/timetracking/TimerControl.jsx"]
     cmdPalette["components/shared/CommandPalette.jsx"]
     conflictModal["components/shared/ConflictResolutionModal.jsx"]
+    issuesKanban["components/issues/IssuesKanban.jsx\n(@hello-pangea/dnd)"]
+    burndownChart["components/sprints/BurndownChart.jsx\n(Recharts + date-fns)"]
 
     Toast["components/ui/Toast.jsx"]
     SyncCtx["lib/SyncContext.jsx\n(Sync context + conflict state)"]
@@ -398,6 +430,8 @@ graph TD
     sprintStore --> libStoreUtils
     autoStore --> libStoreUtils
 
+    libStoreUtils --> libQueue
+
     prodStore --> libCache
     clientStore --> libCache
     projStore --> libCache
@@ -432,6 +466,11 @@ graph TD
 
     hookQuery --> libSupa
     libClaude --> libConsts
+
+    issuesKanban --> issueStore
+    issuesKanban --> libConsts
+
+    burndownChart --> libConsts
 ```
 
 ### 4.3 IPC Bridge (Renderer ↔ Main)
@@ -448,21 +487,21 @@ sequenceDiagram
 
     R->>P: window.electron.ai.generate(prompt, type)
     P->>M: ipcMain.handle('ai:generate')
-    M->>S: Fetch claude_api_key from settings
-    M->>C: anthropic.messages.create(...)
+    M->>S: Fetch zen_api_key from settings
+    M->>C: anthropic.messages.create(...) [baseURL=opencode.ai/zen/v1]
     C-->>M: content
     M-->>R: { content, error }
 
     R->>P: window.electron.settings.get(key)
     P->>M: ipcMain.handle('settings:get')
     M->>S: Fetch value from settings
-    Note over M: If key is 'claude_api_key' or 'smtp_pass', mask as '••••••••••••'
+    Note over M: If key is 'zen_api_key' or 'smtp_pass', mask as '••••••••••••'
     M-->>R: { data: maskedOrRaw, error }
 
     R->>P: window.electron.settings.set(key, value)
     P->>M: ipcMain.handle('settings:set')
     Note over M: If value is '••••••••••••', skip update (no-op)
-    Note over M: Else if key is 'claude_api_key' or 'smtp_pass', encrypt via safeStorage
+    Note over M: Else if key is 'zen_api_key' or 'smtp_pass', encrypt via safeStorage
     M->>S: upsert into settings table
     M-->>R: { success }
 
@@ -498,6 +537,9 @@ sequenceDiagram
     P->>M: ipcMain.handle('notification:show')
     M->>M: new Notification({ title, body })
     Note over M: Fires native OS desktop notification (no return data needed)
+
+    Note over P: window.electron.platform exposed directly (process.platform)
+    Note over R: Used by Sidebar for macOS traffic-light padding
 ```
 
 ---
@@ -505,9 +547,9 @@ sequenceDiagram
 ## 5. IPC Channel Reference
 
 | Channel | Direction | Handler File | What It Does |
-|---|---|---|---|---|
+|---|---|---|---|
 | `supabase:query` | R→M | `ipc/supabase.ipc.js` | Generic Supabase proxy (select/insert/update/delete/upsert) |
-| `ai:generate` | R→M | `ipc/ai.ipc.js` | Calls Claude API; falls back to mock if no key |
+| `ai:generate` | R→M | `ipc/ai.ipc.js` | Calls OpenCode Zen (Claude) API; falls back to mock if no key |
 | `email:send` | R→M | `mailer.js` | Sends email via Nodemailer using SMTP from DB |
 | `automation:trigger` | R→M | `automations.js` | Manually triggers an automation by ID |
 | `settings:get` | R→M | `main.js` (inline) | Reads a single key from `settings` table |
@@ -538,7 +580,7 @@ sequenceDiagram
 | `ai_reports` | `id` (uuid) | `type`, `title`, `content`, `related_id`, `related_type`, `is_draft` |
 | `automations` | `id` (uuid) | `name`, `enabled`, `trigger_type`, `trigger_config` (jsonb), `action_type`, `action_config` (jsonb), `last_triggered_at`, `trigger_count` |
 | `time_entries` | `id` (uuid) | `issue_id` (FK → issues), `description`, `duration_minutes`, `started_at`, `ended_at`, `date`, `created_at`, `updated_at` |
-| `settings` | `key` (text) | `value` (text), `updated_at` — stores SMTP creds, Claude API key, feature flags |
+| `settings` | `key` (text) | `value` (text), `updated_at` — stores SMTP creds, Zen API key, feature flags |
 
 ### Relationships
 
@@ -565,6 +607,8 @@ settings (standalone key-value store)
 backlog → todo → in_progress → testing → uat → ready_to_deploy → production → monitoring → done
                                                                            ↘ rolled_back
 Any → cancelled → backlog
+cancelled → backlog (only)
+rolled_back → backlog (only)
 ```
 
 ### Other Enums
@@ -636,7 +680,7 @@ flowchart TD
 
     ACT --> QA[create_qa_entry\n→ INSERT qa_items]
     ACT --> EMAIL[send_email\n→ mailer.js → SMTP]
-    ACT --> REPORT[generate_ai_report\n→ ai.ipc.js → Claude\n→ INSERT ai_reports]
+    ACT --> REPORT[generate_ai_report\n→ ai.ipc.js → OpenCode Zen\n→ INSERT ai_reports]
     ACT --> NOTION[create_notion_page\n⚠ Not implemented]
 
     QA & EMAIL & REPORT --> REC[recordTrigger\nupdate last_triggered_at\n+ trigger_count++]
@@ -661,15 +705,15 @@ All routes are rendered inside `HashRouter` (Electron-compatible).
 | `/products` | `Products.jsx` | Product catalogue CRUD |
 | `/clients` | `Clients.jsx` | Client management CRUD |
 | `/projects` | `Projects.jsx` | Projects kanban/table CRUD |
-| `/issues` | `Issues.jsx` | Issue tracker with filters + status transitions + time tracking panel |
+| `/issues` | `Issues.jsx` | Issue tracker with filters + status transitions + time tracking panel + optional `IssuesKanban` view |
 | `/qa` | `QATracker.jsx` | QA test cases CRUD + status tracking |
 | `/deployments` | `Deployments.jsx` | Deployment log CRUD + AI notes |
-| `/sprints` | `Sprints.jsx` | Sprint management + AI summary generation |
+| `/sprints` | `Sprints.jsx` | Sprint management + AI summary generation + per-sprint `BurndownChart` |
 | `/automations` | `Automations.jsx` | Automation rule builder + manual trigger |
 | `/ai-reports` | `AIReports.jsx` | AI-generated report viewer + editor |
 | `/time` | `TimeTracking.jsx` | Week view (responsive 7→1 column grid), start/stop timer, manual log dialog, CSV export, compact navigation bar |
 | `/import` | `Import.jsx` | 4-step wizard with visual progress indicator: source selection cards, file upload (dashed drop zone), conflict review with sticky table, results summary |
-| `/settings` | `Settings.jsx` | SMTP config, Claude API key, workspace manager (add/switch/remove), feature flags |
+| `/settings` | `Settings.jsx` | SMTP config, Zen API key (`zen_api_key`), workspace manager (add/switch/remove), feature flags |
 
 Pre-auth screens (not in HashRouter):
 - `Setup.jsx` — shown when `.env` is missing/unconfigured
@@ -721,6 +765,17 @@ export const optimisticRemove = (items, id) => items.filter((i) => i.id !== id);
 export const rollbackAdd = (items, tid) => items.filter((i) => i.id !== tid);
 export const rollbackUpdate = (items, id, prev) => items.map((i) => (i.id === id ? prev : i));
 export const rollbackRemove = (items, prev) => prev;
+
+// Network-safe mutation wrapper (new in current version)
+export async function safeMutate(meta, mutationFn) {
+  // Network failures → enqueue(meta) for offline replay
+  // Other failures   → re-throw (caller rolls back + toasts)
+}
+
+// Conflict error detector
+export function isConflictError(err) {
+  // Returns true for HTTP 409 / PostgreSQL P0001 / stale/conflict message
+}
 ```
 
 ### Store Implementation Example
@@ -737,7 +792,8 @@ import {
   optimisticRemove,
   rollbackAdd,
   rollbackUpdate,
-  rollbackRemove
+  rollbackRemove,
+  safeMutate,
 } from '../lib/storeUtils';
 
 export const useProjectStore = create((set, get) => ({
@@ -763,15 +819,13 @@ export const useProjectStore = create((set, get) => ({
     const { data, error } = await supabase.from('projects').insert(payload).select().single();
     if (error) {
       set((s) => ({ projects: rollbackAdd(s.projects, tid), error: error.message }));
-      useToast().error(error.message); // globally safe error notification
+      useToast().error(error.message);
       return { error };
     }
 
     set((s) => ({ projects: s.projects.map((p) => (p.id === tid ? data : p)) }));
     return { data };
   },
-
-  // Similarly structured optimistic updateProject and deleteProject methods...
 
   // ─── BACKWARD COMPATIBILITY ADAPTER ALIASES ─────────────────────────────────
   fetch: () => get().fetchProjects(),
@@ -785,7 +839,45 @@ All stores write **directly to Supabase** from the renderer using `src/lib/supab
 
 ---
 
-## 13. Settings Keys (in `settings` table)
+## 13. Offline Sync Flow (`syncQueue.js`)
+
+```mermaid
+flowchart TD
+    MUT[Store mutation fails\nwith network error] --> EQ[storeUtils.safeMutate\n→ enqueue entry]
+    EQ --> LS[(localStorage\ncc_sync_queue)]
+    EQ --> EVT1[emit: enqueued]
+
+    ONLINE[window.online event] --> DRAIN[drainQueue(supabase)]
+    MANUAL[SyncContext.manualSync()] --> DRAIN
+
+    DRAIN --> CHECK{entry.nextAttempt\n<= now?}
+    CHECK -- No --> SKIP[keep in queue]
+    CHECK -- Yes --> CONFLICT{upsert + updated_at\ndivergence?}
+    CONFLICT -- Yes --> CEV[emit: conflict\nkeep in queue\nfor user resolution]
+    CONFLICT -- No --> EXEC[Execute mutation\nupsert / delete]
+    EXEC -- success --> DONE[remove from queue\nemit: drained]
+    EXEC -- fail --> RETRY{retries < MAX_RETRIES?}
+    RETRY -- Yes --> BACKOFF[exponential backoff\nemit: retrying]
+    RETRY -- No --> DROP[drop entry\nemit: dropped]
+
+    CEV --> MODAL[ConflictResolutionModal\nkeep server / overwrite / discard]
+    MODAL -- overwrite --> UE[updateEntry + re-drain]
+    MODAL -- discard --> RE[removeEntry]
+```
+
+**Exported API:**
+- `enqueue(item)` — adds failed mutation to queue
+- `drainQueue(client)` — replays queue; returns `{ conflicts[] }`
+- `clearQueue()` — wipe queue on logout
+- `getPendingEntries()` — returns raw queue for diagnostics
+- `removeEntry(entryId)` — removes one entry (post conflict resolution)
+- `updateEntry(entryId, newPayload)` — updates payload (user chose "overwrite")
+- `queueDepth()` — returns current queue length
+- `onSyncEvent(fn)` — subscribe to sync events; returns unsubscribe fn
+
+---
+
+## 14. Settings Keys (in `settings` table)
 
 | Key | Purpose |
 |---|---|
@@ -798,10 +890,9 @@ All stores write **directly to Supabase** from the renderer using `src/lib/supab
 | `daily_summary_enabled` | `"true"/"false"` — toggles nightly sprint summary cron |
 | `daily_summary_time` | `"HH:MM"` — time of day when the nightly sprint summary runs (default `"23:00"`) |
 
-
 ---
 
-## 14. Key External Dependencies
+## 15. Key External Dependencies
 
 | Package | Version | Used For |
 |---|---|---|
@@ -814,20 +905,23 @@ All stores write **directly to Supabase** from the renderer using `src/lib/supab
 | `nodemailer` | ^6.10.1 | Email sending (main process only) |
 | `node-cron` | ^3.0.3 | Scheduled jobs (main process only) |
 | `lucide-react` | ^0.511.0 | Icon library |
-| `recharts` | ^2.15.3 | Charts on Dashboard |
+| `recharts` | ^2.15.3 | Charts on Dashboard + BurndownChart |
 | `@tanstack/react-table` | ^8.21.3 | Data tables |
-| `@hello-pangea/dnd` | ^17.0.0 | Drag-and-drop (Sprints board) |
+| `@hello-pangea/dnd` | ^17.0.0 | Drag-and-drop (Board + IssuesKanban) |
+| `@hookform/resolvers` | ^5.4.0 | Zod resolvers for react-hook-form |
 | `react-hook-form` | ^7.56.4 | Form management |
 | `zod` | ^3.24.4 | Form validation schemas |
 | `react-markdown` | ^9.0.3 | Renders AI report markdown content |
-| `date-fns` | ^4.1.0 | Date formatting |
+| `date-fns` | ^4.1.0 | Date formatting + BurndownChart interval math |
 | `tailwindcss` | ^3.4.17 | Utility CSS (dev) |
 | `vite` | ^6.3.5 | Renderer bundler |
 | `electron-builder` | ^25.1.8 | Packaging/distribution |
+| `vitest` | ^4.1.7 | Test runner |
+| `jsdom` | ^29.1.1 | DOM environment for tests |
 
 ---
 
-## 15. Build & Dev Scripts
+## 16. Build & Dev Scripts
 
 ```bash
 # Development (runs Vite dev server + Electron simultaneously)
@@ -850,6 +944,12 @@ npm run preview
 
 # Regenerate app icons from SVG source
 npm run build:icons
+
+# Run tests (all 5 test files)
+npm test
+
+# Run tests in watch mode
+npm run test:watch
 ```
 
 **Output directories:**
@@ -858,7 +958,7 @@ npm run build:icons
 
 ---
 
-## 16. Environment Variables (`.env`)
+## 17. Environment Variables (`.env`)
 
 ```bash
 VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -871,7 +971,7 @@ VITE_APP_VERSION=1.0.5
 
 ---
 
-## 17. Security Design Notes
+## 18. Security Design Notes
 
 - **No Node.js APIs in renderer** — `nodeIntegration: false`, `contextIsolation: true`
 - **API keys never in renderer** — Zen API key and SMTP password only accessed in main process via `settings` table query
@@ -882,6 +982,7 @@ VITE_APP_VERSION=1.0.5
 - **Workspace credentials encrypted** — Supabase URL/anon keys stored in `userData/workspaces.json` encrypted via `safeStorage`
 - **Dismissed notifications in localStorage** — `cc_dismissed_notifications` key stores dismissed notification IDs; no sensitive data in localStorage
 - **Import sanitization** — All imported data passes through `sanitizePayload()` to strip internal fields and nullify empty FK values before insert
+- **Theme in localStorage** — `theme` key stores `"dark"` or `"light"`; not sensitive
 
 ---
 

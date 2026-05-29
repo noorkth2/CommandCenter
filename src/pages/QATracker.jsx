@@ -23,9 +23,9 @@ import {
 } from '../lib/constants';
 
 const SEVERITY_COLORS = {
-  critical: 'text-brand-red',
-  high: 'text-brand-amber',
-  medium: 'text-brand-blue',
+  critical: 'text-danger',
+  high: 'text-warning',
+  medium: 'text-accent',
   low: 'text-text-muted',
 };
 
@@ -174,10 +174,10 @@ export default function QATracker() {
       <div className="grid grid-cols-5 gap-3 mb-5">
         {[
           { label: 'Total', value: stats.total, color: 'text-text-primary' },
-          { label: 'Pass', value: stats.pass, color: 'text-brand-green' },
-          { label: 'Fail', value: stats.fail, color: 'text-brand-red' },
-          { label: 'Blocked', value: stats.blocked, color: 'text-brand-amber' },
-          { label: 'To Test', value: stats.to_test, color: 'text-brand-blue' },
+          { label: 'Pass', value: stats.pass, color: 'text-success' },
+          { label: 'Fail', value: stats.fail, color: 'text-danger' },
+          { label: 'Blocked', value: stats.blocked, color: 'text-warning' },
+          { label: 'To Test', value: stats.to_test, color: 'text-accent' },
         ].map(({ label, value, color }) => (
           <div key={label} className="card p-4 text-center">
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
@@ -227,8 +227,8 @@ export default function QATracker() {
 
       {/* Bulk actions */}
       {selected.size > 0 && (
-        <div className="card p-3 mb-4 flex items-center gap-3 bg-brand-blue/5 border-brand-blue/20">
-          <span className="text-sm text-brand-blue font-medium">{selected.size} selected</span>
+        <div className="card p-3 mb-4 flex items-center gap-3 bg-accent/5 border-accent/20">
+          <span className="text-sm text-accent font-medium">{selected.size} selected</span>
           <Select
             placeholder="Change Status"
             options={toOptions(QA_STATUSES, QA_STATUS_LABELS)}
@@ -279,7 +279,7 @@ export default function QATracker() {
                 <tr>
                   <th className="w-10">
                     <button onClick={() => selected.size === items.length ? clearSelection() : selectAll()} className="btn-icon w-5 h-5">
-                      {selected.size === items.length ? <CheckSquare size={13} className="text-brand-blue" /> : <Square size={13} />}
+                      {selected.size === items.length ? <CheckSquare size={13} className="text-accent" /> : <Square size={13} />}
                     </button>
                   </th>
                   <th>Test Case</th>
@@ -295,10 +295,10 @@ export default function QATracker() {
               </thead>
               <tbody>
                 {items.map((item) => (
-                  <tr key={item.id} className={`cursor-pointer ${selected.has(item.id) ? 'bg-brand-blue/5' : ''}`}>
+                  <tr key={item.id} className={`cursor-pointer ${selected.has(item.id) ? 'bg-accent/5' : ''}`}>
                     <td onClick={e => { e.stopPropagation(); toggleSelected(item.id); }}>
                       <button className="btn-icon w-5 h-5">
-                        {selected.has(item.id) ? <CheckSquare size={13} className="text-brand-blue" /> : <Square size={13} />}
+                        {selected.has(item.id) ? <CheckSquare size={13} className="text-accent" /> : <Square size={13} />}
                       </button>
                     </td>
                     <td onClick={() => openEdit(item)}>

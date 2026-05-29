@@ -20,9 +20,9 @@ export default function AIGenerateButton({
       onClick={onClick}
       loading={loading}
       disabled={disabled || loading}
-      className="border-brand-purple/30 text-brand-purple hover:bg-brand-purple/10 hover:border-brand-purple/50"
+      className="border-accent/30 text-accent hover:bg-accent/10 hover:border-accent/50"
     >
-      {!loading && <Sparkles size={13} className="text-brand-purple" />}
+      {!loading && <Sparkles size={13} className="text-accent" />}
       {label}
     </Button>
   );

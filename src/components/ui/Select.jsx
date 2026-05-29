@@ -16,14 +16,14 @@ const Select = forwardRef(function Select(
       {label && (
         <label htmlFor={selectId} className="form-label">
           {label}
-          {props.required && <span className="text-brand-red ml-0.5">*</span>}
+          {props.required && <span className="text-danger ml-0.5">*</span>}
         </label>
       )}
       <select
         ref={ref}
         id={selectId}
         className={`input-base appearance-none cursor-pointer ${
-          error ? 'border-brand-red' : ''
+          error ? 'border-danger' : ''
         } ${className}`}
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8799' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,

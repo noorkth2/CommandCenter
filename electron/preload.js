@@ -87,4 +87,12 @@ contextBridge.exposeInMainWorld('electron', {
     remove: (id) => ipcRenderer.invoke('workspace:remove', id),
     switch: (id) => ipcRenderer.invoke('workspace:switch', id),
   },
+
+  /**
+   * Jira integration
+   */
+  jira: {
+    sync: () => ipcRenderer.invoke('jira:sync'),
+    pushStatus: (jiraId, status) => ipcRenderer.invoke('jira:push-status', jiraId, status),
+  },
 });

@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from 'react-router-dom';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import ConflictResolutionModal from '../shared/ConflictResolutionModal';
@@ -7,9 +7,22 @@ import CommandPalette from '../shared/CommandPalette';
 import NotificationGenerator from '../notifications/NotificationGenerator';
 import { useSync } from '../../lib/SyncContext';
 
-function ConflictModalManager() {
+/**
+ * ConflictModalManager — renders the conflict resolution modal.
+ * Accepts an externally-controlled open trigger so the TopBar badge can open it.
+ */
+function ConflictModalManager({ onRegisterOpen }) {
   const { conflicts, resolveConflict } = useSync();
   const [activeConflict, setActiveConflict] = useState(null);
+
+  const openNext = useCallback(() => {
+    if (conflicts.length > 0) setActiveConflict(conflicts[0].entryId);
+  }, [conflicts]);
+
+  // Expose the openNext trigger to the parent Layout
+  useEffect(() => {
+    onRegisterOpen?.(openNext);
+  }, [openNext, onRegisterOpen]);
 
   const handleClose = useCallback(() => setActiveConflict(null), []);
 
@@ -22,30 +35,14 @@ function ConflictModalManager() {
     ? conflicts.find((c) => c.entryId === activeConflict)
     : null;
 
-  return (
-    <>
-      {/* Conflict badge in the content area - shown when there are unresolved conflicts */}
-      {conflicts.length > 0 && !activeConflict && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
-          <button
-            onClick={() => setActiveConflict(conflicts[0].entryId)}
-            className="flex items-center gap-2 h-9 px-4 rounded-lg bg-brand-red/15 border border-brand-red/30 text-sm text-brand-red font-medium hover:bg-brand-red/25 transition-colors shadow-overlay"
-          >
-            <span className="w-2 h-2 rounded-full bg-brand-red animate-pulse" />
-            {conflicts.length} sync conflict{conflicts.length > 1 ? 's' : ''} — resolve
-          </button>
-        </div>
-      )}
+  if (!activeConflictData) return null;
 
-      {/* Conflict resolution modal */}
-      {activeConflictData && (
-        <ConflictResolutionModal
-          conflict={activeConflictData}
-          onResolve={handleResolve}
-          onClose={handleClose}
-        />
-      )}
-    </>
+  return (
+    <ConflictResolutionModal
+      conflict={activeConflictData}
+      onResolve={handleResolve}
+      onClose={handleClose}
+    />
   );
 }
 
@@ -54,6 +51,16 @@ function ConflictModalManager() {
  */
 export default function Layout() {
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Ref to the ConflictModalManager's openNext function so TopBar can trigger it
+  const openConflictRef = useRef(null);
+
+  const handleOpenConflict = useCallback(() => {
+    openConflictRef.current?.();
+  }, []);
+
+  const handleRegisterOpen = useCallback((fn) => {
+    openConflictRef.current = fn;
+  }, []);
 
   // Global Cmd+K / Ctrl+K shortcut
   useEffect(() => {
@@ -70,13 +77,16 @@ export default function Layout() {
   return (
     <div className="app-layout">
       <Sidebar />
-      <TopBar onOpenPalette={() => setPaletteOpen(true)} />
+      <TopBar
+        onOpenPalette={() => setPaletteOpen(true)}
+        onOpenConflicts={handleOpenConflict}
+      />
       <main className="main-content" id="main-content">
-        <div className="p-6 max-w-[1200px] mx-auto">
+        <div className="p-7 max-w-[1200px] mx-auto">
           <Outlet />
         </div>
       </main>
-      <ConflictModalManager />
+      <ConflictModalManager onRegisterOpen={handleRegisterOpen} />
       <NotificationGenerator />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>

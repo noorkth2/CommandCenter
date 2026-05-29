@@ -18,15 +18,15 @@ export default function AccessDenied() {
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center bg-bg-base overflow-hidden select-none">
       {/* Background glow effects */}
-      <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-brand-red/5 blur-[150px] pointer-events-none animate-pulse duration-[6000ms]" />
-      <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-brand-amber/5 blur-[150px] pointer-events-none animate-pulse duration-[8000ms]" />
+      <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-danger/5 blur-[150px] pointer-events-none animate-pulse duration-[6000ms]" />
+      <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-warning/5 blur-[150px] pointer-events-none animate-pulse duration-[8000ms]" />
 
       <div className="w-full max-w-[420px] px-6 z-10 animate-scale-in">
-        <div className="relative bg-bg-surface/60 backdrop-blur-xl border border-brand-red/20 rounded-2xl shadow-overlay p-8 md:p-10 text-center">
+        <div className="relative bg-bg-surface/60 backdrop-blur-xl border border-danger/20 rounded-2xl p-8 md:p-10 text-center">
           
           {/* Warning Icon */}
-          <div className="mx-auto w-14 h-14 rounded-full bg-brand-red/10 flex items-center justify-center mb-6 border border-brand-red/30 shadow-lg shadow-brand-red/5 animate-pulse">
-            <ShieldAlert className="text-brand-red" size={26} />
+          <div className="mx-auto w-14 h-14 rounded-full bg-danger/10 flex items-center justify-center mb-6 border border-danger/30 shadow-lg shadow-danger/5 animate-pulse">
+            <ShieldAlert className="text-danger" size={26} />
           </div>
 
           {/* Heading */}
@@ -50,12 +50,12 @@ export default function AccessDenied() {
             disabled={loading}
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-xs font-semibold
-              bg-brand-red/10 hover:bg-brand-red/20 border border-brand-red/30 text-brand-red
+              bg-danger/10 hover:bg-danger/20 border border-danger/30 text-danger
               transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98]
               disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
-              <div className="w-4 h-4 border-2 border-brand-red/30 border-t-brand-red rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-danger/30 border-t-danger rounded-full animate-spin" />
             ) : (
               <LogOut size={14} />
             )}

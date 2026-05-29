@@ -107,11 +107,6 @@ class AutomationEngine {
           await this._generateAiReport(triggerData, config);
           break;
 
-        case 'create_notion_page':
-          // Placeholder — Notion integration not implemented in v1
-          console.log('[automations] create_notion_page: not implemented');
-          break;
-
         default:
           console.warn('[automations] Unknown action_type:', automation.action_type);
       }

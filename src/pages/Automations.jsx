@@ -32,10 +32,6 @@ import {
   AUTOMATION_ACTION_LABELS,
 } from '../lib/constants';
 
-// Hide the stub action that isn't implemented yet
-const VISIBLE_ACTION_TYPES = AUTOMATION_ACTION_TYPES.filter(
-  (t) => t !== 'create_notion_page'
-);
 
 const triggerSchema = z.object({
   name: z.string().min(1, 'Automation name is required'),
@@ -177,13 +173,13 @@ export default function Automations() {
   const getActionIcon = (action) => {
     switch (action) {
       case 'create_qa_entry':
-        return <Bug size={13} className="text-brand-red" />;
+        return <Bug size={13} className="text-danger" />;
       case 'send_email':
-        return <Mail size={13} className="text-brand-amber" />;
+        return <Mail size={13} className="text-warning" />;
       case 'generate_ai_report':
-        return <Code size={13} className="text-brand-purple" />;
+        return <Code size={13} className="text-accent" />;
       default:
-        return <Zap size={13} className="text-brand-blue" />;
+        return <Zap size={13} className="text-accent" />;
     }
   };
 
@@ -224,7 +220,7 @@ export default function Automations() {
             <div
               key={rule.id}
               onClick={() => openEdit(rule)}
-              className="card p-5 cursor-pointer hover:border-border-strong hover:shadow-card hover:-translate-y-px transition-all duration-150 flex flex-col justify-between h-52 relative group"
+              className="card p-5 cursor-pointer hover:border-border-hover hover:transition-all duration-150 flex flex-col justify-between h-52 relative group"
             >
               {/* Top: name + toggle */}
               <div>
@@ -240,11 +236,11 @@ export default function Automations() {
                   <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => toggle(rule.id)}
-                      className="btn-icon w-8 h-8 rounded hover:bg-bg-hover flex items-center justify-center"
+                      className="btn-icon w-8 h-8 rounded hover:bg-bg-elevated flex items-center justify-center"
                       title={rule.enabled ? 'Disable automation' : 'Enable automation'}
                     >
                       {rule.enabled ? (
-                        <ToggleRight size={22} className="text-brand-blue" />
+                        <ToggleRight size={22} className="text-accent" />
                       ) : (
                         <ToggleLeft size={22} className="text-text-muted" />
                       )}
@@ -263,10 +259,10 @@ export default function Automations() {
                     Action: <span className="font-medium text-text-primary">{AUTOMATION_ACTION_LABELS[rule.action_type]}</span>
                   </span>
                   {/* Trigger count badge */}
-                  <span className="badge text-2xs bg-brand-blue/10 border-brand-blue/20 text-brand-blue flex items-center gap-1">
+                  <span className="badge text-2xs bg-accent/10 border-accent/20 text-accent flex items-center gap-1">
                     <Activity size={10} />
                     <span className="font-semibold">{rule.trigger_count ?? 0}</span>
-                    <span className="text-brand-blue/70">{rule.trigger_count === 1 ? 'run' : 'runs'}</span>
+                    <span className="text-accent/70">{rule.trigger_count === 1 ? 'run' : 'runs'}</span>
                   </span>
                 </div>
               </div>
@@ -293,7 +289,7 @@ export default function Automations() {
                     className="!h-7 !px-2 bg-bg-elevated border border-border text-text-secondary hover:text-text-primary"
                     title="Manual Test Run"
                   >
-                    <Play size={10} className="text-brand-blue" /> Test
+                    <Play size={10} className="text-accent" /> Test
                   </Button>
                   <Button
                     variant="danger"
@@ -362,7 +358,7 @@ export default function Automations() {
             />
             <Select
               label="Action to Execute"
-              options={toOptions(VISIBLE_ACTION_TYPES, AUTOMATION_ACTION_LABELS)}
+              options={toOptions(AUTOMATION_ACTION_TYPES, AUTOMATION_ACTION_LABELS)}
               error={errors.action_type?.message}
               {...register('action_type')}
             />

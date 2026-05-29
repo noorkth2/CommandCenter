@@ -7,6 +7,16 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self' 'unsafe-inline' 'unsafe-eval' file: data: blob: https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://fonts.googleapis.com https://fonts.gstatic.com ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:*; img-src 'self' file: data: blob: https:; font-src 'self' file: data: https://fonts.gstatic.com;"
     />
+    <script>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'dark';
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
     <title>CommandCenter</title>
     <meta name="description" content="PM Command Center — unified project, issue, QA, and deployment management" />
     <link rel="icon" type="image/svg+xml" href="./src/assets/logo.svg" />
@@ -21,17 +31,25 @@
       html, body, #root {
         margin: 0;
         padding: 0;
-        background-color: #0e0e10;
-        color: #e8e6f0;
         font-family: 'Inter', system-ui, sans-serif;
         height: 100%;
         overflow: hidden;
       }
+      html.dark, html.dark body, html.dark #root {
+        background-color: #0a0a0a;
+        color: #f5f5f5;
+      }
+      html:not(.dark), html:not(.dark) body, html:not(.dark) #root {
+        background-color: #f5f5f5;
+        color: #0a0a0a;
+      }
       /* Custom scrollbar */
       ::-webkit-scrollbar { width: 6px; height: 6px; }
       ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
-      ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+      html.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+      html.dark ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+      html:not(.dark) ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+      html:not(.dark) ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
     </style>
   </head>
   <body>

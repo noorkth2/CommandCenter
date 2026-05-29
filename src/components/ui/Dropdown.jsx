@@ -95,7 +95,7 @@ export default function Dropdown({ trigger, items = [], align = 'right' }) {
               : { left: `${coords.left}px`, transformOrigin: 'top left' }
             ),
           }}
-          className="z-[9999] min-w-[160px] py-1 bg-bg-elevated border border-border-strong rounded-lg shadow-overlay animate-scale-in"
+          className="z-[9999] min-w-[160px] py-1 bg-bg-elevated border border-border-hover rounded-lg animate-scale-in"
           role="menu"
         >
           {items.map((item, idx) => {
@@ -111,8 +111,8 @@ export default function Dropdown({ trigger, items = [], align = 'right' }) {
                   transition-colors duration-100 cursor-pointer
                   disabled:opacity-40 disabled:cursor-not-allowed
                   ${item.danger
-                    ? 'text-brand-red hover:bg-brand-red/10'
-                    : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'}
+                    ? 'text-danger hover:bg-danger/10'
+                    : 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary'}
                 `}
                 onClick={() => {
                   if (!item.disabled) {

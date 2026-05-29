@@ -49,12 +49,12 @@ export default function ConflictResolutionModal({ conflict, onResolve, onClose }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-bg-surface border border-border rounded-lg shadow-overlay w-full max-w-2xl max-h-[80vh] flex flex-col animate-scale-in">
+      <div className="relative bg-bg-surface border border-border rounded-lg w-full max-w-2xl max-h-[80vh] flex flex-col animate-scale-in">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-brand-amber/15 flex items-center justify-center">
-              <AlertTriangle size={16} className="text-brand-amber" />
+            <div className="w-8 h-8 rounded-full bg-warning/15 flex items-center justify-center">
+              <AlertTriangle size={16} className="text-warning" />
             </div>
             <div>
               <h2 className="text-sm font-semibold text-text-primary">Sync Conflict</h2>
@@ -81,19 +81,19 @@ export default function ConflictResolutionModal({ conflict, onResolve, onClose }
                 {key.replace(/_/g, ' ')}
               </div>
               <div className="grid grid-cols-2 divide-x divide-border">
-                <div className="p-3 bg-brand-red/5">
+                <div className="p-3 bg-danger/5">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-red" />
-                    <span className="text-2xs font-medium text-brand-red uppercase">Your version</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-danger" />
+                    <span className="text-2xs font-medium text-danger uppercase">Your version</span>
                   </div>
                   <p className="text-xs text-text-primary whitespace-pre-wrap break-words">
                     {local != null ? String(local) : <span className="text-text-muted italic">empty</span>}
                   </p>
                 </div>
-                <div className="p-3 bg-brand-blue/5">
+                <div className="p-3 bg-accent/5">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-blue" />
-                    <span className="text-2xs font-medium text-brand-blue uppercase">Server version</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                    <span className="text-2xs font-medium text-accent uppercase">Server version</span>
                   </div>
                   <p className="text-xs text-text-primary whitespace-pre-wrap break-words">
                     {server != null ? String(server) : <span className="text-text-muted italic">empty</span>}

@@ -65,6 +65,7 @@ export default function Sprints() {
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [selectedSprintId, setSelectedSprintId] = useState('');
   const [moveDestination, setMoveDestination] = useState('backlog'); // backlog | sprint_id
+  const [plannedPoints, setPlannedPoints] = useState(0);
 
   const {
     register,
@@ -144,6 +145,7 @@ export default function Sprints() {
   const handleCompleteSprintClick = () => {
     if (!activeSprint) return;
     setSelectedSprintId(activeSprint.id);
+    setPlannedPoints(activeSprintIssues.length);
     setCompleteDialogOpen(true);
   };
 
@@ -158,12 +160,8 @@ export default function Sprints() {
         }
       }
 
-      // 2. Complete the sprint, save completed count
-      await updateSprint(activeSprint.id, {
-        status: 'completed',
-        end_date: new Date().toISOString().split('T')[0],
-        completed_tasks_count: completedIssues.length,
-      });
+      // 2. Complete the sprint, calculating completed count, planned, and velocity
+      await completeSprint(activeSprint.id, activeSprintIssues, plannedPoints);
 
       toast.success('Sprint completed successfully!');
       setCompleteDialogOpen(false);
@@ -175,13 +173,9 @@ export default function Sprints() {
 
   const handleGenerateSummary = async () => {
     if (!activeSprint) return;
-    if (completedIssues.length === 0) {
-      toast.error('No completed issues in this sprint to summarize.');
-      return;
-    }
 
     try {
-      // Form issues data payload
+      // Form issues data payload — pass all sprint issues, fallback handles empty
       const issuesPayload = completedIssues.map((i) => ({
         title: i.title,
         description: i.description,
@@ -191,12 +185,12 @@ export default function Sprints() {
 
       const summary = await generateInline('sprint_summary', issuesPayload);
       if (!summary) {
-        throw new Error('AI failed to generate sprint summary content');
+        throw new Error('Failed to generate sprint summary content');
       }
 
       // Update the active sprint with the AI Summary
       await updateSprint(activeSprint.id, { ai_summary: summary });
-      toast.success('AI Sprint Summary generated successfully!');
+      toast.success('Sprint summary generated successfully!');
       await fetchSprints();
     } catch (err) {
       toast.error(err.message);
@@ -242,7 +236,7 @@ export default function Sprints() {
             onClick={() => setActiveTab(tab.id)}
             className={`text-sm pb-3 font-medium border-b-2 px-1 transition-all ${
               activeTab === tab.id
-                ? 'border-brand-blue text-brand-blue'
+                ? 'border-accent text-accent'
                 : 'border-transparent text-text-secondary hover:text-text-primary'
             }`}
           >
@@ -304,7 +298,7 @@ export default function Sprints() {
                       </span>
                       <div className="progress-bar-track">
                         <div
-                          className="progress-bar-fill glow-blue"
+                          className="progress-bar-fill"
                           style={{ width: `${progressPercent}%` }}
                         />
                       </div>
@@ -326,7 +320,7 @@ export default function Sprints() {
                       {activeSprintIssues.map((issue) => (
                         <div
                           key={issue.id}
-                          className="p-3 bg-bg-elevated border border-border rounded-lg flex items-center justify-between gap-4 hover:border-border-strong transition-colors"
+                          className="p-3 bg-bg-elevated border border-border rounded-lg flex items-center justify-between gap-4 hover:border-border-hover transition-colors"
                         >
                           <div className="min-w-0">
                             <span className="font-medium text-text-primary text-xs block truncate">
@@ -369,13 +363,13 @@ export default function Sprints() {
                   <div>
                     <div className="flex items-center justify-between border-b border-border pb-3 mb-3">
                       <div className="flex items-center gap-2">
-                        <Sparkles size={15} className="text-brand-purple" />
+                        <Sparkles size={15} className="text-accent" />
                         <h4 className="font-semibold text-text-primary text-sm">AI Sprint Summary</h4>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="!h-7 !px-2 border border-brand-purple/20 text-brand-purple hover:bg-brand-purple/5"
+                        className="!h-7 !px-2 border border-accent/20 text-accent hover:bg-accent/5"
                         onClick={handleGenerateSummary}
                         loading={aiGenerating}
                       >
@@ -410,7 +404,7 @@ export default function Sprints() {
           {/* Left Column: Sprints (Active / Upcoming) */}
           <div className="lg:col-span-1 space-y-4">
             <h3 className="font-semibold text-text-primary text-sm flex items-center gap-2">
-              <Calendar size={15} className="text-brand-blue" />
+              <Calendar size={15} className="text-accent" />
               Active & Upcoming Sprints
             </h3>
 
@@ -432,7 +426,7 @@ export default function Sprints() {
                       <div
                         key={sprint.id}
                         className={`card p-4 space-y-3 border transition-all ${
-                          sprint.status === 'active' ? 'border-brand-blue/30 bg-brand-blue/5' : ''
+                          sprint.status === 'active' ? 'border-accent/30 bg-accent/5' : ''
                         }`}
                       >
                         <div className="flex items-center justify-between border-b border-border/40 pb-2">
@@ -446,7 +440,7 @@ export default function Sprints() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="!h-6 !px-2 bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/20"
+                              className="!h-6 !px-2 bg-accent/10 text-accent hover:bg-accent/20"
                               onClick={() => handleStartSprint(sprint.id)}
                             >
                               <Play size={9} /> Start
@@ -472,7 +466,7 @@ export default function Sprints() {
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-text-primary text-sm flex items-center gap-2">
-                <FolderOpen size={15} className="text-brand-amber" />
+                <FolderOpen size={15} className="text-warning" />
                 Unassigned Backlog ({backlogIssues.length} issues)
               </h3>
             </div>
@@ -546,7 +540,7 @@ export default function Sprints() {
       {activeTab === 'history' && (
         <div className="space-y-4">
           <h3 className="font-semibold text-text-primary text-sm flex items-center gap-2">
-            <Clock size={15} className="text-brand-purple" />
+            <Clock size={15} className="text-accent" />
             Completed Sprint Logs
           </h3>
 
@@ -565,7 +559,7 @@ export default function Sprints() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between border-b border-border pb-2">
                       <h4 className="font-semibold text-text-primary text-sm">{sprint.name}</h4>
-                      <span className="badge text-xs bg-brand-green/10 text-brand-green border-brand-green/20">
+                      <span className="badge text-xs bg-success/10 text-success border-success/20">
                         {sprint.completed_tasks_count} completed
                       </span>
                     </div>
@@ -576,12 +570,19 @@ export default function Sprints() {
                         Dates: {sprint.start_date} <ArrowRight size={8} className="inline mx-1" />{' '}
                         {sprint.end_date}
                       </p>
+                      {sprint.velocity !== undefined && sprint.velocity !== null && (
+                        <div className="flex justify-between mt-2 pt-2 border-t border-border">
+                          <span>Planned: <strong>{sprint.planned_points || 0}</strong></span>
+                          <span>Completed: <strong>{sprint.completed_points || 0}</strong></span>
+                          <span>Velocity: <strong className="text-success">{Math.round(sprint.velocity * 100)}%</strong></span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {sprint.ai_summary && (
                     <details className="mt-2 group">
-                      <summary className="text-2xs text-brand-purple cursor-pointer select-none font-medium outline-none hover:underline">
+                      <summary className="text-2xs text-accent cursor-pointer select-none font-medium outline-none hover:underline">
                         View AI Summary
                       </summary>
                       <div className="mt-2 p-3 bg-bg-elevated rounded border border-border/80 prose prose-invert prose-xs text-text-secondary text-2xs leading-relaxed max-h-40 overflow-y-auto">
@@ -653,12 +654,12 @@ export default function Sprints() {
         }
       >
         <div className="space-y-4">
-          <div className="p-3.5 bg-brand-red/5 border border-brand-red/10 rounded-lg text-xs text-text-secondary flex gap-3 items-start">
-            <AlertCircle size={16} className="text-brand-red flex-shrink-0 mt-0.5" />
+          <div className="p-3.5 bg-danger/5 border border-danger/10 rounded-lg text-xs text-text-secondary flex gap-3 items-start">
+            <AlertCircle size={16} className="text-danger flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-text-primary">Sprint Issues Allocation</p>
               <p className="mt-1 leading-relaxed">
-                There are still <strong className="text-brand-red">{incompleteIssues.length} unresolved</strong> issues
+                There are still <strong className="text-danger">{incompleteIssues.length} unresolved</strong> issues
                 linked to this active sprint. You must choose what to do with these items before completing the sprint.
               </p>
             </div>
@@ -674,6 +675,14 @@ export default function Sprints() {
                 .filter((s) => s.status === 'upcoming')
                 .map((s) => ({ value: s.id, label: `Upcoming: ${s.name}` })),
             ]}
+          />
+
+          <Input
+            label="Planned Scope / Points (Default is number of sprint tasks)"
+            type="number"
+            min={1}
+            value={plannedPoints}
+            onChange={(e) => setPlannedPoints(parseInt(e.target.value) || 0)}
           />
         </div>
       </Dialog>

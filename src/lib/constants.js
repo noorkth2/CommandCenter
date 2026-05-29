@@ -156,13 +156,13 @@ export const AUTOMATION_TRIGGER_TYPES = [
   'issue_status_changed',
   'deployment_completed',
   'schedule',
+  'jira_issue_synced',
 ];
 
 export const AUTOMATION_ACTION_TYPES = [
   'create_qa_entry',
   'send_email',
   'generate_ai_report',
-  'create_notion_page',
 ];
 
 export const AUTOMATION_TRIGGER_LABELS = {
@@ -170,13 +170,13 @@ export const AUTOMATION_TRIGGER_LABELS = {
   issue_status_changed: 'Issue Status Changed',
   deployment_completed: 'Deployment Completed',
   schedule: 'Scheduled',
+  jira_issue_synced: 'Jira Issue Synced',
 };
 
 export const AUTOMATION_ACTION_LABELS = {
   create_qa_entry: 'Create QA Entry',
   send_email: 'Send Email',
   generate_ai_report: 'Generate AI Report',
-  create_notion_page: 'Create Notion Page',
 };
 
 // ─── Color maps ───────────────────────────────────────────────────────────────
@@ -184,38 +184,38 @@ export const AUTOMATION_ACTION_LABELS = {
 /** Tailwind class maps for status/priority badges */
 export const STATUS_COLORS = {
   // Project
-  active: 'bg-brand-blue/15 text-brand-blue border-brand-blue/30',
-  on_hold: 'bg-brand-amber/15 text-brand-amber border-brand-amber/30',
-  completed: 'bg-brand-green/15 text-brand-green border-brand-green/30',
-  blocked: 'bg-brand-red/15 text-brand-red border-brand-red/30',
+  active: 'bg-accent/15 text-accent border-accent/30',
+  on_hold: 'bg-warning/15 text-warning border-warning/30',
+  completed: 'bg-success/15 text-success border-success/30',
+  blocked: 'bg-danger/15 text-danger border-danger/30',
   // Issue
   backlog: 'bg-text-muted/15 text-text-secondary border-text-muted/30',
-  todo: 'bg-brand-blue/10 text-brand-blue border-brand-blue/20',
-  in_progress: 'bg-brand-purple/15 text-brand-purple border-brand-purple/30',
-  testing: 'bg-brand-amber/15 text-brand-amber border-brand-amber/30',
-  uat: 'bg-brand-amber/20 text-brand-amber border-brand-amber/40',
-  ready_to_deploy: 'bg-brand-green/10 text-brand-green border-brand-green/20',
-  production: 'bg-brand-green/15 text-brand-green border-brand-green/30',
-  monitoring: 'bg-brand-blue/15 text-brand-blue border-brand-blue/30',
-  done: 'bg-brand-green/20 text-brand-green border-brand-green/40',
+  todo: 'bg-accent/10 text-accent border-accent/20',
+  in_progress: 'bg-accent/15 text-accent border-accent/30',
+  testing: 'bg-warning/15 text-warning border-warning/30',
+  uat: 'bg-warning/20 text-warning border-warning/40',
+  ready_to_deploy: 'bg-success/10 text-success border-success/20',
+  production: 'bg-success/15 text-success border-success/30',
+  monitoring: 'bg-accent/15 text-accent border-accent/30',
+  done: 'bg-success/20 text-success border-success/40',
   cancelled: 'bg-text-muted/10 text-text-muted border-text-muted/20',
   // QA
-  to_test: 'bg-brand-blue/15 text-brand-blue border-brand-blue/30',
-  pass: 'bg-brand-green/15 text-brand-green border-brand-green/30',
-  fail: 'bg-brand-red/15 text-brand-red border-brand-red/30',
+  to_test: 'bg-accent/15 text-accent border-accent/30',
+  pass: 'bg-success/15 text-success border-success/30',
+  fail: 'bg-danger/15 text-danger border-danger/30',
   // Deployment
   planned: 'bg-text-muted/15 text-text-secondary border-text-muted/30',
-  success: 'bg-brand-green/15 text-brand-green border-brand-green/30',
-  failed: 'bg-brand-red/15 text-brand-red border-brand-red/30',
-  rolled_back: 'bg-brand-amber/15 text-brand-amber border-brand-amber/30',
+  success: 'bg-success/15 text-success border-success/30',
+  failed: 'bg-danger/15 text-danger border-danger/30',
+  rolled_back: 'bg-warning/15 text-warning border-warning/30',
   // Sprint
   upcoming: 'bg-text-muted/15 text-text-secondary border-text-muted/30',
 };
 
 export const PRIORITY_COLORS = {
-  p0: 'bg-brand-red/15 text-brand-red border-brand-red/30',
-  p1: 'bg-brand-amber/15 text-brand-amber border-brand-amber/30',
-  p2: 'bg-brand-blue/15 text-brand-blue border-brand-blue/30',
+  p0: 'bg-danger/15 text-danger border-danger/30',
+  p1: 'bg-warning/15 text-warning border-warning/30',
+  p2: 'bg-accent/15 text-accent border-accent/30',
   p3: 'bg-text-muted/15 text-text-secondary border-text-muted/30',
 };
 
@@ -327,7 +327,7 @@ export const PRIORITY_COLORS = {
  * @property {boolean} enabled
  * @property {'issue_created'|'issue_status_changed'|'deployment_completed'|'schedule'} trigger_type
  * @property {object} trigger_config
- * @property {'create_qa_entry'|'send_email'|'generate_ai_report'|'create_notion_page'} action_type
+ * @property {'create_qa_entry'|'send_email'|'generate_ai_report'} action_type
  * @property {object} action_config
  * @property {string|null} last_triggered_at
  * @property {number} trigger_count

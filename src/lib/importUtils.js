@@ -245,41 +245,54 @@ function parseJiraCSV(text) {
 
 // ─── CSV parse for issues ─────────────────────────────────────────────────
 
-function parseIssuesCSV(text) {
+function parseIssuesCSV(text, fieldMap = null) {
   const rows = parseCSV(text);
   return rows.map((row) => {
+    const getVal = (key) => {
+      const mappedKey = fieldMap?.[key]?.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      return row[mappedKey || key] || null;
+    };
+
+    const labelsRaw = getVal('labels');
+    const labels = labelsRaw ? labelsRaw.split(/[,;]+/).map((l) => l.trim()).filter(Boolean) : [];
+
     const item = {
-      title: row.title || row.summary || row.name || 'Untitled',
-      description: row.description || null,
-      status: row.status || 'backlog',
-      priority: row.priority || 'p2',
-      labels: row.labels ? row.labels.split(/[,;]+/).map((l) => l.trim()).filter(Boolean) : [],
-      assignee: row.assignee || null,
-      project_id: row.project_id || null,
-      sprint_id: row.sprint_id || null,
-      team: row.team || null,
-      environment: row.environment || null,
+      title: getVal('title') || getVal('summary') || getVal('name') || 'Untitled',
+      description: getVal('description') || null,
+      status: getVal('status') || 'backlog',
+      priority: getVal('priority') || 'p2',
+      labels,
+      assignee: getVal('assignee') || null,
+      project_id: getVal('project_id') || null,
+      sprint_id: getVal('sprint_id') || null,
+      team: getVal('team') || null,
+      environment: getVal('environment') || null,
     };
     // Convert empty string FK to null for clean display
     return sanitizePayload('issues', item);
   });
 }
 
-function parseQACSV(text) {
+function parseQACSV(text, fieldMap = null) {
   const rows = parseCSV(text);
   return rows.map((row) => {
+    const getVal = (key) => {
+      const mappedKey = fieldMap?.[key]?.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      return row[mappedKey || key] || null;
+    };
+
     const item = {
-      test_case: row.test_case || row.title || row.name || 'Untitled',
-      project_id: row.project_id || null,
-      module: row.module || null,
-      test_type: row.test_type || null,
-      severity: row.severity || 'medium',
-      status: row.status || 'to_test',
-      steps_to_reproduce: row.steps_to_reproduce || null,
-      expected_result: row.expected_result || null,
-      actual_result: row.actual_result || null,
-      environment: row.environment || null,
-      notes: row.notes || null,
+      test_case: getVal('test_case') || getVal('title') || getVal('name') || 'Untitled',
+      project_id: getVal('project_id') || null,
+      module: getVal('module') || null,
+      test_type: getVal('test_type') || null,
+      severity: getVal('severity') || 'medium',
+      status: getVal('status') || 'to_test',
+      steps_to_reproduce: getVal('steps_to_reproduce') || null,
+      expected_result: getVal('expected_result') || null,
+      actual_result: getVal('actual_result') || null,
+      environment: getVal('environment') || null,
+      notes: getVal('notes') || null,
     };
     return sanitizePayload('qa_items', item);
   });

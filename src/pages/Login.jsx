@@ -31,8 +31,8 @@ export default function Login() {
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center bg-bg-base overflow-hidden select-none">
       {/* Background glow effects */}
-      <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-brand-blue/10 blur-[150px] pointer-events-none animate-pulse duration-[6000ms]" />
-      <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-brand-purple/10 blur-[150px] pointer-events-none animate-pulse duration-[8000ms]" />
+      <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-accent/10 blur-[150px] pointer-events-none animate-pulse duration-[6000ms]" />
+      <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-accent/10 blur-[150px] pointer-events-none animate-pulse duration-[8000ms]" />
 
       {/* Grid lines styling overlay */}
       <div
@@ -45,9 +45,9 @@ export default function Login() {
 
       {/* Center login card */}
       <div className="w-full max-w-[420px] px-6 z-10">
-        <div className="relative bg-bg-surface/60 backdrop-blur-xl border border-border-strong rounded-2xl shadow-overlay p-8 md:p-10 text-center animate-scale-in">
+        <div className="relative bg-bg-surface/60 backdrop-blur-xl border border-border-hover rounded-2xl p-8 md:p-10 text-center animate-scale-in">
           {/* Logo badge */}
-          <div className="mx-auto w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-blue to-brand-purple p-[1px] shadow-lg shadow-brand-blue/20 flex items-center justify-center mb-6">
+          <div className="mx-auto w-12 h-12 rounded-xl bg-gradient-to-tr from-accent to-accent p-[1px] shadow-lg shadow-accent/20 flex items-center justify-center mb-6">
             <div className="w-full h-full bg-bg-surface rounded-[11px] flex items-center justify-center">
               <Logo className="w-6 h-6" />
             </div>
@@ -55,7 +55,7 @@ export default function Login() {
 
           {/* Heading */}
           <h1 className="text-xl font-bold tracking-tight mb-2">
-            <span className="bg-gradient-to-r from-text-primary via-brand-blue to-brand-purple bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-text-primary via-accent to-accent bg-clip-text text-transparent">
               CommandCenter
             </span>
           </h1>
@@ -69,7 +69,7 @@ export default function Login() {
             onClick={handleLogin}
             className={`
               w-full flex items-center justify-center gap-3 px-5 py-3 rounded-lg text-xs font-semibold
-              border border-border-strong bg-bg-surface hover:bg-bg-hover hover:border-text-muted
+              border border-border-hover bg-bg-surface hover:bg-bg-elevated hover:border-text-muted
               transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98]
               disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
               relative overflow-hidden group
@@ -79,7 +79,7 @@ export default function Login() {
             <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-[-25deg] translate-x-[-150%] group-hover:translate-x-[250%] transition-transform duration-[1200ms] ease-out" />
 
             {isLoggingIn ? (
-              <div className="w-4 h-4 border-2 border-text-muted border-t-brand-blue rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-text-muted border-t-accent rounded-full animate-spin" />
             ) : (
               <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                 <path

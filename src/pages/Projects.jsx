@@ -35,6 +35,7 @@ const schema = z.object({
   notes: z.string().optional(),
   client_id: z.string().uuid('Invalid client selection').optional().or(z.literal('')),
   running: z.boolean().optional(),
+  time_budget_hours: z.preprocess((val) => (val === '' || val === null ? undefined : Number(val)), z.number().min(0).optional()),
 });
 
 const toOptions = (arr, labels) => arr.map((v) => ({ value: v, label: labels[v] ?? v }));
@@ -56,7 +57,7 @@ export default function Projects() {
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { status: 'active', priority: 'p2', tech_stack: '', category: '', name: '', description: '', notes: '', deadline: '', client_id: '', running: true },
+    defaultValues: { status: 'active', priority: 'p2', tech_stack: '', category: '', name: '', description: '', notes: '', deadline: '', client_id: '', running: true, time_budget_hours: '' },
   });
 
   const loading = projectsLoading;
@@ -80,6 +81,7 @@ export default function Projects() {
       deadline: '',
       client_id: '',
       running: true,
+      time_budget_hours: '',
     });
     setPanelOpen(true);
   };
@@ -97,6 +99,7 @@ export default function Projects() {
       notes: project.notes ?? '',
       client_id: project.client_id ?? '',
       running: project.running ?? true,
+      time_budget_hours: project.time_budget_hours ?? '',
     });
     setPanelOpen(true);
   }, [reset]);
@@ -110,6 +113,7 @@ export default function Projects() {
         deadline: data.deadline || null,
         client_id: data.client_id || null,
         running: data.running !== undefined ? data.running : true,
+        time_budget_hours: data.time_budget_hours || null,
       };
       if (editing) {
         await update(editing.id, payload);
@@ -203,7 +207,7 @@ export default function Projects() {
               setFilterProduct('all');
               setFilterClient('all');
             }}
-            className="text-brand-red hover:bg-brand-red/10 h-7"
+            className="text-danger hover:bg-danger/10 h-7"
           >
             Clear Filters
           </Button>
@@ -244,7 +248,7 @@ export default function Projects() {
                       <div className="flex flex-col gap-1">
                         <span className="font-medium text-text-primary">{p.name}</span>
                         {p.clients ? (
-                          <span className="text-3xs text-brand-blue font-medium tracking-wide uppercase">
+                          <span className="text-3xs text-accent font-medium tracking-wide uppercase">
                             {p.clients.products?.name} • {p.clients.name}
                           </span>
                         ) : (
@@ -253,7 +257,7 @@ export default function Projects() {
                         {(p.tech_stack ?? []).length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-0.5">
                             {(p.tech_stack ?? []).slice(0, 4).map((t) => (
-                              <span key={t} className="text-3xs px-1.5 py-0.5 rounded bg-bg-hover text-text-muted border border-border">
+                              <span key={t} className="text-3xs px-1.5 py-0.5 rounded bg-bg-elevated text-text-muted border border-border">
                                 {t}
                               </span>
                             ))}
@@ -286,11 +290,11 @@ export default function Projects() {
                         }}
                         className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-2xs font-medium border transition-colors duration-150 cursor-pointer ${
                           p.running
-                            ? 'bg-brand-green/10 border-brand-green/30 text-brand-green hover:bg-brand-green/20'
-                            : 'bg-bg-hover border-border text-text-muted hover:border-border-strong'
+                            ? 'bg-success/10 border-success/30 text-success hover:bg-success/20'
+                            : 'bg-bg-elevated border-border text-text-muted hover:border-border-hover'
                         }`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${p.running ? 'bg-brand-green' : 'bg-text-muted'}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full ${p.running ? 'bg-success' : 'bg-text-muted'}`} />
                         {p.running ? 'Running' : 'Paused'}
                       </button>
                     </td>
@@ -361,13 +365,13 @@ export default function Projects() {
               <label className="form-label">Running</label>
               <label className="flex items-center gap-2 h-8 cursor-pointer select-none">
                 <input type="checkbox" className="sr-only peer" {...register('running')} />
-                <div className="relative w-9 h-5 bg-bg-hover rounded-full border border-border
-                  peer-checked:bg-brand-blue peer-checked:border-brand-blue
+                <div className="relative w-9 h-5 bg-bg-elevated rounded-full border border-border
+                  peer-checked:bg-accent peer-checked:border-accent
                   after:content-[''] after:absolute after:top-0.5 after:left-0.5
                   after:bg-white after:rounded-full after:h-4 after:w-4
                   after:transition-all peer-checked:after:translate-x-4
                   transition-colors duration-150" />
-                <span className="text-xs text-text-secondary peer-checked:text-brand-blue">On</span>
+                <span className="text-xs text-text-secondary peer-checked:text-accent">On</span>
               </label>
             </div>
           </div>
@@ -377,6 +381,16 @@ export default function Projects() {
             placeholder="React, Node.js, PostgreSQL (comma-separated)"
             hint="Separate technologies with commas"
             {...register('tech_stack')}
+          />
+          
+          <Input
+            label="Project Time Budget (Hours)"
+            type="number"
+            step="0.1"
+            placeholder="e.g. 150"
+            hint="Total estimated development hours allocated for this project"
+            error={errors.time_budget_hours?.message}
+            {...register('time_budget_hours')}
           />
 
           <Textarea label="Description" placeholder="Brief project description…" rows={3} {...register('description')} />

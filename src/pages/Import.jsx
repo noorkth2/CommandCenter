@@ -41,32 +41,32 @@ const SOURCE_TYPES = [
     title: 'CommandCenter JSON Backup',
     desc: 'Full database export — products, clients, projects, issues, QA, deployments, sprints, automations',
     icon: FileJson,
-    color: 'text-brand-blue',
-    bgColor: 'bg-brand-blue/10 border-brand-blue/20',
+    color: 'text-accent',
+    bgColor: 'bg-accent/10 border-accent/20',
   },
   {
     id: 'csv_issues',
     title: 'CSV Issues',
     desc: 'Import issues from a CSV file with columns: title, status, priority, labels, assignee, description, project_id, sprint_id',
     icon: FileText,
-    color: 'text-brand-purple',
-    bgColor: 'bg-brand-purple/10 border-brand-purple/20',
+    color: 'text-accent',
+    bgColor: 'bg-accent/10 border-accent/20',
   },
   {
     id: 'csv_qa',
     title: 'CSV QA Tests',
     desc: 'Import QA test cases from CSV: test_case, severity, status, module, project_id',
     icon: FileText,
-    color: 'text-brand-green',
-    bgColor: 'bg-brand-green/10 border-brand-green/20',
+    color: 'text-success',
+    bgColor: 'bg-success/10 border-success/20',
   },
   {
     id: 'jira',
     title: 'Jira CSV Export',
     desc: 'Import issues from Jira CSV — auto-maps statuses, priorities, labels, and assignees',
     icon: Download,
-    color: 'text-brand-amber',
-    bgColor: 'bg-brand-amber/10 border-brand-amber/20',
+    color: 'text-warning',
+    bgColor: 'bg-warning/10 border-warning/20',
   },
 ];
 
@@ -97,6 +97,57 @@ export default function Import() {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
 
+  // CSV Mapping states
+  const [rawText, setRawText] = useState('');
+  const [csvHeaders, setCsvHeaders] = useState([]);
+  const [fieldMap, setFieldMap] = useState({});
+  const [savedFieldMap, setSavedFieldMap] = useState({});
+  const [showMapping, setShowMapping] = useState(false);
+
+  // Load saved mapping on mount
+  useEffect(() => {
+    async function loadSavedMapping() {
+      if (window.electron?.settings?.get) {
+        const res = await window.electron.settings.get('jira_field_map');
+        if (res?.data) {
+          try {
+            setSavedFieldMap(JSON.parse(res.data));
+          } catch { /* ignore */ }
+        }
+      }
+    }
+    loadSavedMapping();
+  }, []);
+
+  const handleSaveMapping = async () => {
+    if (window.electron?.settings?.set) {
+      await window.electron.settings.set('jira_field_map', JSON.stringify(fieldMap));
+      setSavedFieldMap(fieldMap);
+      toast.success('Mapping saved successfully!');
+    }
+  };
+
+  const handleLoadMapping = () => {
+    if (savedFieldMap && Object.keys(savedFieldMap).length > 0) {
+      setFieldMap(savedFieldMap);
+      toast.success('Loaded saved mapping');
+    } else {
+      toast.error('No saved mapping found.');
+    }
+  };
+
+  const autoMapHeaders = (headers, fields) => {
+    const map = {};
+    fields.forEach(field => {
+      const match = headers.find(h => 
+        h.toLowerCase().replace(/[^a-z]/g, '') === field.toLowerCase().replace(/[^a-z]/g, '') ||
+        h.toLowerCase().includes(field.toLowerCase())
+      );
+      map[field] = match || '';
+    });
+    return map;
+  };
+
   // Fetch existing data for conflict detection
   const fetchExisting = useCallback(async () => {
     const data = {};
@@ -126,45 +177,57 @@ export default function Import() {
 
     try {
       const text = await file.text();
-      let parsed;
       let existing = existingData;
 
       if (!existing) existing = await fetchExisting();
 
-      switch (sourceType) {
-        case 'json': {
-          const data = JSON.parse(text);
-          if (!data || typeof data !== 'object') throw new Error('Invalid JSON: expected an object with table arrays');
-          parsed = { type: 'json', tables: data };
-          break;
-        }
-        case 'csv_issues': {
-          const items = parseIssuesCSV(text);
-          if (items.length === 0) throw new Error('No valid rows found');
-          const withConflicts = detectConflicts(items, existing.issues || [], 'title');
-          parsed = { type: 'csv', entity: 'issues', items: withConflicts };
-          break;
-        }
-        case 'csv_qa': {
-          const items = parseQACSV(text);
-          if (items.length === 0) throw new Error('No valid rows found');
-          const withConflicts = detectConflicts(items, existing.qa_items || [], 'test_case');
-          parsed = { type: 'csv', entity: 'qa_items', items: withConflicts };
-          break;
-        }
-        case 'jira': {
-          const items = parseJiraCSV(text);
-          if (items.length === 0) throw new Error('No valid rows found');
-          const withConflicts = detectConflicts(items, existing.issues || [], 'title');
-          parsed = { type: 'csv', entity: 'issues', items: withConflicts, source: 'jira' };
-          break;
-        }
-        default:
-          throw new Error('Unknown source type');
+      if (sourceType === 'json') {
+        const data = JSON.parse(text);
+        if (!data || typeof data !== 'object') throw new Error('Invalid JSON: expected an object with table arrays');
+        setParsedData({ type: 'json', tables: data });
+        setShowMapping(false);
+        setStep(2);
+      } else {
+        const parsedRows = parseCSV(text);
+        if (parsedRows.length === 0) throw new Error('No valid rows found');
+        const headers = Object.keys(parsedRows[0]);
+        setCsvHeaders(headers);
+        setRawText(text);
+
+        const fields = sourceType === 'csv_qa'
+          ? ['test_case', 'project_id', 'module', 'test_type', 'severity', 'status', 'steps_to_reproduce', 'expected_result', 'actual_result', 'environment', 'notes']
+          : ['title', 'description', 'status', 'priority', 'labels', 'assignee', 'project_id', 'sprint_id', 'team', 'environment'];
+
+        const initialMap = autoMapHeaders(headers, fields);
+        setFieldMap(initialMap);
+        setShowMapping(true);
+        setStep(2);
+      }
+    } catch (err) {
+      setError(err.message);
+      toast.error(err.message);
+    }
+  };
+
+  const handleApplyMapping = async () => {
+    try {
+      let items;
+      let existing = existingData;
+      if (!existing) existing = await fetchExisting();
+
+      if (sourceType === 'csv_issues' || sourceType === 'jira') {
+        items = parseIssuesCSV(rawText, fieldMap);
+        if (items.length === 0) throw new Error('No valid rows found');
+        const withConflicts = detectConflicts(items, existing.issues || [], 'title');
+        setParsedData({ type: 'csv', entity: 'issues', items: withConflicts, source: sourceType === 'jira' ? 'jira' : undefined });
+      } else if (sourceType === 'csv_qa') {
+        items = parseQACSV(rawText, fieldMap);
+        if (items.length === 0) throw new Error('No valid rows found');
+        const withConflicts = detectConflicts(items, existing.qa_items || [], 'test_case');
+        setParsedData({ type: 'csv', entity: 'qa_items', items: withConflicts });
       }
 
-      setParsedData(parsed);
-      setStep(2);
+      setShowMapping(false);
     } catch (err) {
       setError(err.message);
       toast.error(err.message);
@@ -335,13 +398,13 @@ export default function Import() {
           {['Choose Source', 'Upload File', 'Review & Import', 'Done'].map((label, i) => (
             <div key={i} className="flex-1 flex items-center">
               <div className={`flex items-center gap-2 ${
-                step === i ? 'text-brand-blue' : step > i ? 'text-brand-green' : 'text-text-muted'
+                step === i ? 'text-accent' : step > i ? 'text-success' : 'text-text-muted'
               }`}>
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
                   step === i
-                    ? 'bg-brand-blue text-white'
+                    ? 'bg-accent text-white'
                     : step > i
-                      ? 'bg-brand-green text-white'
+                      ? 'bg-success text-white'
                       : 'bg-bg-elevated border border-border text-text-muted'
                 }`}>
                   {step > i ? <CheckCircle2 size={12} /> : i + 1}
@@ -351,7 +414,7 @@ export default function Import() {
                 </span>
               </div>
               {i < 3 && (
-                <div className={`flex-1 h-px mx-3 ${step > i ? 'bg-brand-green/40' : 'bg-border'}`} />
+                <div className={`flex-1 h-px mx-3 ${step > i ? 'bg-success/40' : 'bg-border'}`} />
               )}
             </div>
           ))}
@@ -368,8 +431,8 @@ export default function Import() {
               <div
                 key={st.id}
                 onClick={() => setSourceType(st.id)}
-                className={`card p-5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 h-full ${
-                  isSelected ? 'ring-2 ring-brand-blue/50' : ''
+                className={`card p-5 cursor-pointer transition-all duration-200 h-full ${
+                  isSelected ? 'ring-2 ring-accent/50' : ''
                 }`}
               >
                 <div className="flex items-start gap-4">
@@ -381,7 +444,7 @@ export default function Import() {
                       <h3 className="text-sm font-semibold text-text-primary">{st.title}</h3>
                       <button
                         onClick={(e) => { e.stopPropagation(); downloadSample(st.id); }}
-                        className="flex items-center gap-1 px-2 py-1 rounded text-2xs text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors flex-shrink-0 cursor-pointer"
+                        className="flex items-center gap-1 px-2 py-1 rounded text-2xs text-text-muted hover:text-text-primary hover:bg-bg-elevated transition-colors flex-shrink-0 cursor-pointer"
                         title="Download sample template"
                       >
                         <Download size={11} />
@@ -408,7 +471,7 @@ export default function Import() {
       {/* Step 1: File Upload (auto-advances to step 2) */}
       {step === 1 && (
         <div
-          className="card p-16 text-center cursor-pointer hover:border-brand-blue/30 transition-colors"
+          className="card p-16 text-center cursor-pointer hover:border-accent/30 transition-colors"
           onClick={() => fileRef.current?.click()}
         >
           <input
@@ -431,135 +494,187 @@ export default function Import() {
         </div>
       )}
 
-      {/* Step 2: Dry-Run / Conflict Review */}
-      {step === 2 && parsedData && (
+      {/* Step 2: Dry-Run / Conflict Review / Field Mapping */}
+      {step === 2 && (
         <>
-          {/* Summary bar */}
-          {stats && (
-            <div className="card p-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <FileJson size={14} className="text-text-muted" />
-                    <span className="text-text-primary font-medium">{fileName}</span>
-                  </div>
-                  <span className="w-px h-4 bg-border" />
-                  <span className="text-text-muted">{stats.total} item{stats.total !== 1 ? 's' : ''}</span>
-                  {stats.conflicts > 0 && (
-                    <>
-                      <span className="w-px h-4 bg-border" />
-                      <span className="text-brand-amber">{stats.conflicts} conflict{stats.conflicts !== 1 ? 's' : ''}</span>
-                    </>
-                  )}
+          {showMapping ? (
+            <div className="card p-6 space-y-6">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <div>
+                  <h3 className="font-semibold text-text-primary text-sm">Configure CSV Field Mapping</h3>
+                  <p className="text-2xs text-text-muted">Map your CSV columns to the appropriate CommandCenter fields</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {parsedData.type !== 'json' && (
-                    <Button variant="ghost" size="sm" onClick={toggleSelectAll}>
-                      {selectAll ? 'Deselect All' : 'Select All'}
-                    </Button>
-                  )}
-                  <Button variant="primary" size="sm" onClick={handleExecute} loading={executing}>
-                    <Database size={14} /> Import {stats.total} Items
+                  <Button variant="ghost" size="sm" onClick={handleLoadMapping}>
+                    Load Saved Mapping
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={handleSaveMapping}>
+                    Save Mapping
                   </Button>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* JSON Import - show tables */}
-          {parsedData.type === 'json' && (
-            <div className="space-y-4">
-              {Object.entries(parsedData.tables).map(([table, items]) => {
-                if (!items?.length) return null;
-                const label = STORE_MAP[table]?.label || table;
-                const key = STORE_MAP[table]?.key || 'name';
-                return (
-                  <div key={table} className="card p-4 space-y-2">
-                    <div className="flex items-center justify-between border-b border-border pb-2">
-                      <span className="text-xs font-semibold text-text-primary">{label}</span>
-                      <span className="text-2xs text-text-muted">{items.length} item{items.length !== 1 ? 's' : ''}</span>
-                    </div>
-                    <div className="max-h-[200px] overflow-y-auto space-y-1">
-                      {items.slice(0, 50).map((item, i) => (
-                        <div key={i} className="text-xs text-text-secondary truncate py-0.5">
-                          {item[key] || item.title || item.test_case || '(unnamed)'}
-                        </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.keys(fieldMap).map((field) => (
+                  <div key={field} className="form-group">
+                    <label className="form-label capitalize text-xs">{field.replace('_', ' ')}</label>
+                    <select
+                      value={fieldMap[field]}
+                      onChange={(e) => setFieldMap({ ...fieldMap, [field]: e.target.value })}
+                      className="input-base text-xs py-1.5 h-auto cursor-pointer"
+                    >
+                      <option value="">-- Ignore / Skip Field --</option>
+                      {csvHeaders.map((header) => (
+                        <option key={header} value={header}>
+                          {header}
+                        </option>
                       ))}
-                      {items.length > 50 && (
-                        <p className="text-2xs text-text-muted pt-1">… and {items.length - 50} more</p>
-                      )}
-                    </div>
+                    </select>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                ))}
+              </div>
 
-          {/* CSV / Jira Import - show items with conflict status */}
-          {parsedData.type !== 'json' && (
-            <div className="card overflow-hidden">
-              <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-border bg-bg-elevated sticky top-0">
-                          <th className="text-left px-4 py-2.5 text-text-muted font-medium w-8"></th>
-                          <th className="text-left px-4 py-2.5 text-text-muted font-medium">Title</th>
-                          <th className="text-left px-4 py-2.5 text-text-muted font-medium">Status</th>
-                          <th className="text-left px-4 py-2.5 text-text-muted font-medium">Priority</th>
-                          <th className="text-left px-4 py-2.5 text-text-muted font-medium">Conflict</th>
-                        </tr>
-                      </thead>
-                  <tbody>
-                    {parsedData.items.map((item, idx) => (
-                      <tr
-                        key={idx}
-                        className={`border-b border-border/50 hover:bg-bg-hover/50 transition-colors ${
-                          item._skip ? 'opacity-40' : ''
-                        }`}
-                      >
-                        <td className="px-4 py-2.5">
-                          <input
-                            type="checkbox"
-                            checked={!item._skip}
-                            onChange={() => toggleSkip(idx)}
-                            className="accent-brand-blue"
-                          />
-                        </td>
-                        <td className="px-4 py-2.5 text-text-primary font-medium truncate max-w-[280px]">
-                          {item.title || item.test_case}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className="text-text-secondary">{item.status || '-'}</span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className="text-text-secondary">{item.priority || item.severity || '-'}</span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          {item._status === 'conflict' ? (
-                            <span className="inline-flex items-center gap-1 text-brand-amber">
-                              <AlertCircle size={11} />
-                              Exists
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-brand-green">
-                              <CheckCircle2 size={11} />
-                              New
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="ghost" onClick={reset}>
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={handleApplyMapping}>
+                  Apply Mapping &amp; Scan Conflicts <ArrowRight size={14} className="ml-1" />
+                </Button>
               </div>
             </div>
-          )}
+          ) : (
+            parsedData && (
+              <>
+                {/* Summary bar */}
+                {stats && (
+                  <div className="card p-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <FileJson size={14} className="text-text-muted" />
+                          <span className="text-text-primary font-medium">{fileName}</span>
+                        </div>
+                        <span className="w-px h-4 bg-border" />
+                        <span className="text-text-muted">{stats.total} item{stats.total !== 1 ? 's' : ''}</span>
+                        {stats.conflicts > 0 && (
+                          <>
+                            <span className="w-px h-4 bg-border" />
+                            <span className="text-warning">{stats.conflicts} conflict{stats.conflicts !== 1 ? 's' : ''}</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {parsedData.type !== 'json' && (
+                          <Button variant="ghost" size="sm" onClick={toggleSelectAll}>
+                            {selectAll ? 'Deselect All' : 'Select All'}
+                          </Button>
+                        )}
+                        <Button variant="primary" size="sm" onClick={handleExecute} loading={executing}>
+                          <Database size={14} /> Import {stats.total} Items
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-          {error && (
-            <div className="flex items-center gap-2 p-3 rounded bg-brand-red/10 border border-brand-red/20 text-xs text-brand-red">
-              <AlertCircle size={13} />
-              {error}
-            </div>
+                {/* JSON Import - show tables */}
+                {parsedData.type === 'json' && (
+                  <div className="space-y-4">
+                    {Object.entries(parsedData.tables).map(([table, items]) => {
+                      if (!items?.length) return null;
+                      const label = STORE_MAP[table]?.label || table;
+                      const key = STORE_MAP[table]?.key || 'name';
+                      return (
+                        <div key={table} className="card p-4 space-y-2">
+                          <div className="flex items-center justify-between border-b border-border pb-2">
+                            <span className="text-xs font-semibold text-text-primary">{label}</span>
+                            <span className="text-2xs text-text-muted">{items.length} item{items.length !== 1 ? 's' : ''}</span>
+                          </div>
+                          <div className="max-h-[200px] overflow-y-auto space-y-1">
+                            {items.slice(0, 50).map((item, i) => (
+                              <div key={i} className="text-xs text-text-secondary truncate py-0.5">
+                                {item[key] || item.title || item.test_case || '(unnamed)'}
+                              </div>
+                            ))}
+                            {items.length > 50 && (
+                              <p className="text-2xs text-text-muted pt-1">… and {items.length - 50} more</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* CSV / Jira Import - show items with conflict status */}
+                {parsedData.type !== 'json' && (
+                  <div className="card overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-border bg-bg-elevated sticky top-0">
+                            <th className="text-left px-4 py-2.5 text-text-muted font-medium w-8"></th>
+                            <th className="text-left px-4 py-2.5 text-text-muted font-medium">Title</th>
+                            <th className="text-left px-4 py-2.5 text-text-muted font-medium">Status</th>
+                            <th className="text-left px-4 py-2.5 text-text-muted font-medium">Priority</th>
+                            <th className="text-left px-4 py-2.5 text-text-muted font-medium">Conflict</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {parsedData.items.map((item, idx) => (
+                            <tr
+                              key={idx}
+                              className={`border-b border-border/50 hover:bg-bg-elevated/50 transition-colors ${
+                                item._skip ? 'opacity-40' : ''
+                              }`}
+                            >
+                              <td className="px-4 py-2.5">
+                                <input
+                                  type="checkbox"
+                                  checked={!item._skip}
+                                  onChange={() => toggleSkip(idx)}
+                                  className="accent-accent"
+                                />
+                              </td>
+                              <td className="px-4 py-2.5 text-text-primary font-medium truncate max-w-[280px]">
+                                {item.title || item.test_case}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className="text-text-secondary">{item.status || '-'}</span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className="text-text-secondary">{item.priority || item.severity || '-'}</span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                {item._status === 'conflict' ? (
+                                  <span className="inline-flex items-center gap-1 text-warning">
+                                    <AlertCircle size={11} />
+                                    Exists
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-success">
+                                    <CheckCircle2 size={11} />
+                                    New
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="flex items-center gap-2 p-3 rounded bg-danger/10 border border-danger/20 text-xs text-danger">
+                    <AlertCircle size={13} />
+                    {error}
+                  </div>
+                )}
+              </>
+            )
           )}
         </>
       )}
@@ -569,12 +684,12 @@ export default function Import() {
         <div className="space-y-4">
           <div className="card p-8 text-center space-y-5">
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto ${
-              totalFailed === 0 ? 'bg-brand-green/10' : 'bg-brand-amber/10'
+              totalFailed === 0 ? 'bg-success/10' : 'bg-warning/10'
             }`}>
               {totalFailed === 0 ? (
-                <CheckCircle2 size={32} className="text-brand-green" />
+                <CheckCircle2 size={32} className="text-success" />
               ) : (
-                <AlertCircle size={32} className="text-brand-amber" />
+                <AlertCircle size={32} className="text-warning" />
               )}
             </div>
             <div>
@@ -595,15 +710,15 @@ export default function Import() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-text-primary">{label}</span>
                     <div className="flex items-center gap-3 text-2xs">
-                      <span className="text-brand-green">{r.created} created</span>
+                      <span className="text-success">{r.created} created</span>
                       {r.skipped > 0 && <span className="text-text-muted">{r.skipped} skipped</span>}
-                      {r.failed > 0 && <span className="text-brand-red">{r.failed} failed</span>}
+                      {r.failed > 0 && <span className="text-danger">{r.failed} failed</span>}
                     </div>
                   </div>
                   {r.errors?.length > 0 && (
                     <div className="space-y-1 max-h-[120px] overflow-y-auto bg-bg-elevated rounded p-2">
                       {r.errors.map((err, i) => (
-                        <p key={i} className="text-2xs text-brand-red">{err}</p>
+                        <p key={i} className="text-2xs text-danger">{err}</p>
                       ))}
                     </div>
                   )}

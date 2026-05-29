@@ -3,10 +3,10 @@ import { Bell, BellOff, CheckCheck, X, Trash2, AlertTriangle, AlertCircle, Clock
 import { useNotificationStore } from '../../store/useNotificationStore';
 
 const TYPE_ICONS = {
-  qa_failure: { icon: XCircle, color: 'text-brand-amber' },
-  sprint_deadline: { icon: Clock, color: 'text-brand-amber' },
-  deployment_failed: { icon: AlertCircle, color: 'text-brand-red' },
-  issue_overdue: { icon: AlertTriangle, color: 'text-brand-amber' },
+  qa_failure: { icon: XCircle, color: 'text-warning' },
+  sprint_deadline: { icon: Clock, color: 'text-warning' },
+  deployment_failed: { icon: AlertCircle, color: 'text-danger' },
+  issue_overdue: { icon: AlertTriangle, color: 'text-warning' },
 };
 
 function timeAgo(dateStr) {
@@ -41,13 +41,13 @@ export default function NotificationBell() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative flex items-center justify-center w-8 h-8 rounded border border-border bg-bg-elevated hover:border-border-strong transition-colors cursor-pointer"
+        className="relative flex items-center justify-center w-8 h-8 rounded border border-border bg-bg-elevated hover:border-border-hover transition-colors cursor-pointer"
         title="Notifications"
       >
         {unreadCount > 0 ? (
           <>
-            <Bell size={14} className="text-brand-amber" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-brand-red text-white text-[9px] font-bold flex items-center justify-center leading-none">
+            <Bell size={14} className="text-warning" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-danger text-white text-[9px] font-bold flex items-center justify-center leading-none">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           </>
@@ -65,7 +65,7 @@ export default function NotificationBell() {
               {unreadCount > 0 && (
                 <button
                   onClick={() => { markAllRead(); }}
-                  className="text-2xs text-brand-blue hover:text-brand-blue/80 transition-colors cursor-pointer"
+                  className="text-2xs text-accent hover:text-accent/80 transition-colors cursor-pointer"
                 >
                   <CheckCheck size={13} className="inline mr-1" />
                   Mark all read
@@ -91,8 +91,8 @@ export default function NotificationBell() {
                   return (
                     <div
                       key={n.id}
-                      className={`flex items-start gap-3 px-4 py-3 border-b border-border/50 transition-colors hover:bg-bg-hover/50 ${
-                        !n.read ? 'bg-brand-blue/3' : ''
+                      className={`flex items-start gap-3 px-4 py-3 border-b border-border/50 transition-colors hover:bg-bg-elevated/50 ${
+                        !n.read ? 'bg-accent/3' : ''
                       }`}
                     >
                       <div className={`mt-0.5 flex-shrink-0 ${meta.color}`}>
@@ -119,7 +119,7 @@ export default function NotificationBell() {
                         )}
                         <button
                           onClick={() => dismiss(n.id)}
-                          className="p-1 rounded text-text-muted hover:text-brand-red transition-colors cursor-pointer"
+                          className="p-1 rounded text-text-muted hover:text-danger transition-colors cursor-pointer"
                           title="Dismiss"
                         >
                           <X size={12} />
@@ -138,7 +138,7 @@ export default function NotificationBell() {
               <span className="text-2xs text-text-muted">{notifications.length} notification{notifications.length !== 1 ? 's' : ''}</span>
               <button
                 onClick={() => dismissAll()}
-                className="text-2xs text-text-muted hover:text-brand-red transition-colors flex items-center gap-1 cursor-pointer"
+                className="text-2xs text-text-muted hover:text-danger transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Trash2 size={11} />
                 Dismiss all

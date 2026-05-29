@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Trash2, MoreHorizontal, Rocket, RotateCcw, Mail } from 'lucide-react';
+import { Plus, Trash2, MoreHorizontal, Rocket, RotateCcw, Mail, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { useDeploymentStore } from '../store/useDeploymentStore';
@@ -46,7 +46,7 @@ const schema = z.object({
 });
 
 export default function Deployments() {
-  const { deployments, loading, fetch, create, update, delete: deleteDeployment } = useDeploymentStore();
+  const { deployments, loading, fetch, create, update, delete: deleteDeployment, updateChecklist } = useDeploymentStore();
   const { projects, fetch: fetchProjects } = useProjectStore();
   const { generate, generateInline, generating } = useAI();
   const { trigger } = useAutomations();
@@ -60,6 +60,11 @@ export default function Deployments() {
   const [emailPreview, setEmailPreview] = useState(null);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+
+  // Checklist local states
+  const [checklist, setChecklist] = useState([]);
+  const [newItemText, setNewItemText] = useState('');
+  const [suggestingChecklist, setSuggestingChecklist] = useState(false);
 
   const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
@@ -78,6 +83,8 @@ export default function Deployments() {
   const openEdit = useCallback((dep) => {
     setEditing(dep);
     setSelectedServices(dep.services_affected ?? []);
+    setChecklist(dep.checklist ?? []);
+    setNewItemText('');
     reset({
       name: dep.name,
       project_id: dep.project_id ?? '',
@@ -95,6 +102,82 @@ export default function Deployments() {
     setSelectedServices(prev =>
       prev.includes(svc) ? prev.filter(s => s !== svc) : [...prev, svc]
     );
+  };
+
+  const handleAddChecklistItem = async () => {
+    if (!newItemText.trim()) return;
+    const newItem = {
+      id: window.crypto.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).substring(2),
+      text: newItemText.trim(),
+      done: false,
+    };
+    const nextChecklist = [...checklist, newItem];
+    setChecklist(nextChecklist);
+    setNewItemText('');
+    if (editing) {
+      await updateChecklist(editing.id, nextChecklist);
+    }
+  };
+
+  const handleToggleChecklistItem = async (itemId) => {
+    const nextChecklist = checklist.map((item) =>
+      item.id === itemId ? { ...item, done: !item.done } : item
+    );
+    setChecklist(nextChecklist);
+    if (editing) {
+      await updateChecklist(editing.id, nextChecklist);
+    }
+  };
+
+  const handleRemoveChecklistItem = async (itemId) => {
+    const nextChecklist = checklist.filter((item) => item.id !== itemId);
+    setChecklist(nextChecklist);
+    if (editing) {
+      await updateChecklist(editing.id, nextChecklist);
+    }
+  };
+
+  const handleSuggestChecklist = async () => {
+    if (!editing) return;
+    setSuggestingChecklist(true);
+    try {
+      const content = await generateInline('checklist', editing);
+      if (content) {
+        let items = [];
+        try {
+          let cleanContent = content.trim();
+          if (cleanContent.startsWith('```')) {
+            cleanContent = cleanContent.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+          }
+          items = JSON.parse(cleanContent);
+        } catch {
+          items = content
+            .split('\n')
+            .map((l) => l.replace(/^[-\*\d\s\.]+/g, '').trim())
+            .filter((l) => l.length > 0 && l.length < 150);
+        }
+
+        if (Array.isArray(items) && items.length > 0) {
+          const newItems = items.map((text) => ({
+            id: window.crypto.randomUUID ? window.crypto.randomUUID() : Math.random().toString(36).substring(2),
+            text,
+            done: false,
+          }));
+          const nextChecklist = [...checklist, ...newItems];
+          setChecklist(nextChecklist);
+          await updateChecklist(editing.id, nextChecklist);
+          toast.success(`Suggested ${newItems.length} tasks!`);
+        } else {
+          toast.error('AI returned empty/invalid checklist format.');
+        }
+      } else {
+        toast.error('AI failed to suggest items.');
+      }
+    } catch (err) {
+      toast.error(`Error: ${err.message}`);
+    } finally {
+      setSuggestingChecklist(false);
+    }
   };
 
   const onSubmit = async (data) => {
@@ -219,7 +302,7 @@ export default function Deployments() {
                     <td><span className="font-medium text-text-primary">{dep.name}</span></td>
                     <td><span className="text-xs text-text-secondary">{dep.projects?.name ?? '—'}</span></td>
                     <td>
-                      <span className={`badge text-xs ${dep.environment === 'production' ? 'bg-brand-red/10 text-brand-red border-brand-red/20' : dep.environment === 'staging' ? 'bg-brand-amber/10 text-brand-amber border-brand-amber/20' : 'bg-text-muted/10 text-text-muted border-text-muted/20'}`}>
+                      <span className={`badge text-xs ${dep.environment === 'production' ? 'bg-danger/10 text-danger border-danger/20' : dep.environment === 'staging' ? 'bg-warning/10 text-warning border-warning/20' : 'bg-text-muted/10 text-text-muted border-text-muted/20'}`}>
                         {dep.environment}
                       </span>
                     </td>
@@ -227,7 +310,7 @@ export default function Deployments() {
                     <td>
                       <div className="flex flex-wrap gap-1">
                         {(dep.services_affected ?? []).slice(0, 2).map(s => (
-                          <span key={s} className="text-xs px-1.5 py-0.5 rounded bg-bg-hover text-text-muted border border-border">{s}</span>
+                          <span key={s} className="text-xs px-1.5 py-0.5 rounded bg-bg-elevated text-text-muted border border-border">{s}</span>
                         ))}
                         {(dep.services_affected ?? []).length > 2 && <span className="text-xs text-text-muted">+{dep.services_affected.length - 2}</span>}
                       </div>
@@ -299,7 +382,7 @@ export default function Deployments() {
                   key={svc}
                   type="button"
                   onClick={() => toggleService(svc)}
-                  className={`text-xs px-2.5 py-1.5 rounded border transition-all ${selectedServices.includes(svc) ? 'bg-brand-blue/15 border-brand-blue/40 text-brand-blue' : 'bg-bg-elevated border-border text-text-muted hover:border-border-strong hover:text-text-secondary'}`}
+                  className={`text-xs px-2.5 py-1.5 rounded border transition-all ${selectedServices.includes(svc) ? 'bg-accent/15 border-accent/40 text-accent' : 'bg-bg-elevated border-border text-text-muted hover:border-border-hover hover:text-text-secondary'}`}
                 >
                   {svc}
                 </button>
@@ -311,13 +394,115 @@ export default function Deployments() {
           <Textarea label="Rollback Plan" placeholder="Steps to revert this deployment if it fails…" rows={3} error={errors.rollback_plan?.message} {...register('rollback_plan')} hint="Required before setting status to In Progress" />
           <Textarea label="Notes / Incident Log" placeholder="Deployment notes, issues encountered, decisions made…" rows={3} {...register('notes')} />
         </form>
+
+        {/* Checklist section */}
+        {editing && (
+          <div className="mt-6 pt-4 border-t border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-text-primary">Deployment Checklist</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-accent hover:text-accent-hover"
+                onClick={handleSuggestChecklist}
+                loading={suggestingChecklist}
+              >
+                <Sparkles size={12} className="mr-1" /> Suggest Tasks
+              </Button>
+            </div>
+
+            {/* Progress bar */}
+            {checklist.length > 0 && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-3xs text-text-muted">
+                  <span>Progress</span>
+                  <span>
+                    {checklist.filter((c) => c.done).length} of {checklist.length} tasks completed
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-bg-surface border border-border rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-success transition-all duration-300"
+                    style={{
+                      width: `${(checklist.filter((c) => c.done).length / checklist.length) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Input to add task */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add checklist task..."
+                value={newItemText}
+                onChange={(e) => setNewItemText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddChecklistItem();
+                  }
+                }}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleAddChecklistItem}
+              >
+                <Plus size={13} /> Add
+              </Button>
+            </div>
+
+            {/* Tasks list */}
+            {checklist.length > 0 ? (
+              <div className="space-y-1.5 max-h-[180px] overflow-y-auto pt-2">
+                {checklist.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-2 rounded bg-bg-elevated border border-border hover:border-text-muted transition-colors"
+                  >
+                    <label className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={item.done}
+                        onChange={() => handleToggleChecklistItem(item.id)}
+                        className="rounded border-border text-accent focus:ring-accent/30 focus:outline-none"
+                      />
+                      <span
+                        className={`text-2xs truncate select-none ${
+                          item.done ? 'line-through text-text-muted' : 'text-text-primary'
+                        }`}
+                      >
+                        {item.text}
+                      </span>
+                    </label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-danger/60 hover:text-danger p-1"
+                      onClick={() => handleRemoveChecklistItem(item.id)}
+                    >
+                      <Trash2 size={12} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-2xs text-text-muted">No checklist tasks logged yet</p>
+            )}
+          </div>
+        )}
       </Dialog>
 
       {/* Email preview modal */}
       {emailModalOpen && createPortal(
         <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
           <div className="fixed inset-0 bg-black/60 animate-fade-in" onClick={() => setEmailModalOpen(false)} />
-          <div className="relative w-full max-w-lg bg-bg-elevated border border-border-strong rounded-xl shadow-overlay p-6 animate-scale-in z-10">
+          <div className="relative w-full max-w-lg bg-bg-elevated border border-border-hover rounded-xl p-6 animate-scale-in z-10">
             <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2"><Mail size={15} /> Email Preview</h3>
             <div className="bg-bg-base border border-border rounded p-4 text-sm text-text-secondary whitespace-pre-wrap max-h-64 overflow-y-auto mb-4">
               {emailPreview}

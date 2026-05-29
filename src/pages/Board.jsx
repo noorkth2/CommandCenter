@@ -11,6 +11,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useIssueStore } from '../store/useIssueStore';
 import { useSprintStore } from '../store/useSprintStore';
 import { useProjectStore } from '../store/useProjectStore';
+import { useSettingsStore, SETTING_DEFAULTS } from '../store/useSettingsStore';
 import { useToast } from '../components/ui/Toast';
 import Button from '../components/ui/Button';
 import Dialog from '../components/ui/Dialog';
@@ -32,24 +33,25 @@ const BOARD_COLUMNS = [
   'uat', 'ready_to_deploy', 'done',
 ];
 
-const WIP_LIMITS = {
+/** Hardcoded column-level limit map — null means unlimited */
+const buildWipLimitMap = (limits) => ({
   backlog: null,
   todo: null,
-  in_progress: 5,
-  testing: 4,
-  uat: 3,
+  in_progress: limits?.in_progress ?? SETTING_DEFAULTS.wip_limits.in_progress,
+  testing: limits?.testing    ?? SETTING_DEFAULTS.wip_limits.testing,
+  uat: limits?.uat           ?? SETTING_DEFAULTS.wip_limits.uat,
   ready_to_deploy: null,
   done: null,
-};
+});
 
 const COLUMN_COLORS = {
   backlog: 'text-text-muted',
-  todo: 'text-brand-blue',
-  in_progress: 'text-brand-purple',
-  testing: 'text-brand-amber',
-  uat: 'text-brand-amber',
-  ready_to_deploy: 'text-brand-green',
-  done: 'text-brand-green',
+  todo: 'text-accent',
+  in_progress: 'text-accent',
+  testing: 'text-warning',
+  uat: 'text-warning',
+  ready_to_deploy: 'text-success',
+  done: 'text-success',
 };
 
 export default function Board() {
@@ -59,6 +61,13 @@ export default function Board() {
   const { issues, loading, fetch: fetchIssues, create, transitionStatus } = useIssueStore();
   const { sprints, fetch: fetchSprints } = useSprintStore();
   const { projects, fetch: fetchProjects } = useProjectStore();
+  const getSetting = useSettingsStore((s) => s.getSetting);
+
+  // WIP limits — loaded from settings, falls back to defaults instantly
+  const [wipLimits, setWipLimits] = useState(() => buildWipLimitMap(SETTING_DEFAULTS.wip_limits));
+  useEffect(() => {
+    getSetting('wip_limits').then((val) => setWipLimits(buildWipLimitMap(val)));
+  }, [getSetting]);
 
   const [selectedSprintId, setSelectedSprintId] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -121,7 +130,7 @@ export default function Board() {
     if (!issue || issue.status === newStatus) return;
 
     // Check WIP limit
-    const limit = WIP_LIMITS[newStatus];
+    const limit = wipLimits[newStatus];
     if (limit && issuesByStatus[newStatus].length >= limit) {
       toast.error(`WIP limit reached for ${ISSUE_STATUS_LABELS[newStatus]} (max ${limit})`);
       return;
@@ -186,7 +195,7 @@ export default function Board() {
           <div className="relative flex-shrink-0 min-w-[240px]">
             <button
               onClick={() => setShowSprintDropdown(!showSprintDropdown)}
-              className="w-full flex items-center justify-between gap-2 h-9 px-3 rounded border border-border bg-bg-surface text-sm text-text-primary hover:border-border-strong transition-colors"
+              className="w-full flex items-center justify-between gap-2 h-9 px-3 rounded border border-border bg-bg-surface text-sm text-text-primary hover:border-border-hover transition-colors"
             >
               <span className="truncate">{selectedSprintName}</span>
               <ChevronDown size={14} className="text-text-muted flex-shrink-0" />
@@ -202,8 +211,8 @@ export default function Board() {
                     <button
                       key={s.id}
                       onClick={() => { setSelectedSprintId(s.id); setShowSprintDropdown(false); }}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-bg-hover transition-colors ${
-                        s.id === selectedSprintId ? 'text-brand-blue bg-brand-blue/5' : 'text-text-secondary'
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-bg-elevated transition-colors ${
+                        s.id === selectedSprintId ? 'text-accent bg-accent/5' : 'text-text-secondary'
                       }`}
                     >
                       {s.label}
@@ -222,7 +231,7 @@ export default function Board() {
                 <span>{sprintProgress}%</span>
               </div>
               <div className="progress-bar-track">
-                <div className="progress-bar-fill glow-blue" style={{ width: `${sprintProgress}%` }} />
+                <div className="progress-bar-fill" style={{ width: `${sprintProgress}%` }} />
               </div>
             </div>
           )}
@@ -270,7 +279,7 @@ export default function Board() {
           <div className="flex gap-3 overflow-x-auto pb-4" style={{ minHeight: '500px' }}>
             {BOARD_COLUMNS.map((status) => {
               const col = issuesByStatus[status] ?? [];
-              const limit = WIP_LIMITS[status];
+              const limit = wipLimits[status];
               const atWipLimit = limit && col.length >= limit;
 
               return (
@@ -279,7 +288,7 @@ export default function Board() {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`kanban-column flex-shrink-0 min-w-[240px] ${snapshot.isDraggingOver ? 'drag-over rounded-lg ring-1 ring-brand-blue/30' : ''}`}
+                      className={`kanban-column flex-shrink-0 min-w-[240px] ${snapshot.isDraggingOver ? 'drag-over rounded-lg ring-1 ring-accent/30' : ''}`}
                     >
                       <div className="kanban-column-header">
                         <div className="flex items-center gap-2">
@@ -287,7 +296,7 @@ export default function Board() {
                           <span className={COLUMN_COLORS[status]}>{ISSUE_STATUS_LABELS[status]}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className={`text-xs ${atWipLimit ? 'text-brand-red font-semibold' : 'text-text-muted'}`}>
+                          <span className={`text-xs ${atWipLimit ? 'text-danger font-semibold' : 'text-text-muted'}`}>
                             {col.length}{limit ? `/${limit}` : ''}
                           </span>
                           <button
@@ -301,7 +310,7 @@ export default function Board() {
                       </div>
 
                       {atWipLimit && (
-                        <div className="flex items-center gap-1 px-2 py-1 mb-2 rounded bg-brand-red/10 border border-brand-red/20 text-2xs text-brand-red">
+                        <div className="flex items-center gap-1 px-2 py-1 mb-2 rounded bg-danger/10 border border-danger/20 text-2xs text-danger">
                           <AlertCircle size={10} />
                           WIP limit reached
                         </div>
@@ -315,7 +324,7 @@ export default function Board() {
                                 ref={drag.innerRef}
                                 {...drag.draggableProps}
                                 {...drag.dragHandleProps}
-                                className={`kanban-card transition-all duration-150 ${snap.isDragging ? 'shadow-elevated rotate-1 scale-[1.02]' : 'hover:border-brand-blue/30 hover:shadow-sm'}`}
+                                className={`kanban-card transition-all duration-150 ${snap.isDragging ? 'rotate-1 scale-[1.02]' : 'hover:border-accent/30'}`}
                                 onClick={() => navigate(`/issues`)}
                               >
                                 <p className="text-sm text-text-primary font-medium leading-snug line-clamp-2 mb-2">
@@ -324,7 +333,7 @@ export default function Board() {
                                 <div className="flex flex-wrap gap-1 mb-2">
                                   <PriorityBadge priority={issue.priority} />
                                   {(issue.labels ?? []).slice(0, 2).map((l) => (
-                                    <span key={l} className="badge bg-bg-hover text-text-muted border-border text-xs">{l}</span>
+                                    <span key={l} className="badge bg-bg-elevated text-text-muted border-border text-xs">{l}</span>
                                   ))}
                                 </div>
                                 {issue.assignee && (

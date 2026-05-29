@@ -50,16 +50,16 @@ export default function ConfirmDialog({
       />
       {/* Dialog Panel */}
       <div
-        className="relative w-full max-w-sm bg-bg-elevated border border-border-strong rounded-xl
-                   shadow-overlay p-6 animate-scale-in z-10"
+        className="relative w-full max-w-sm bg-bg-elevated border border-border-hover rounded-xl
+                   p-6 animate-scale-in z-10"
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
         aria-describedby="confirm-message"
       >
         <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-brand-red/10 flex items-center justify-center">
-            <AlertTriangle size={18} className="text-brand-red" />
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-danger/10 flex items-center justify-center">
+            <AlertTriangle size={18} className="text-danger" />
           </div>
           <div className="flex-1 min-w-0">
             <h3 id="confirm-title" className="font-semibold text-text-primary text-sm mb-1">

@@ -13,13 +13,13 @@ const Input = forwardRef(function Input({ label, error, hint, className = '', id
       {label && (
         <label htmlFor={inputId} className="form-label">
           {label}
-          {props.required && <span className="text-brand-red ml-0.5">*</span>}
+          {props.required && <span className="text-danger ml-0.5">*</span>}
         </label>
       )}
       <input
         ref={ref}
         id={inputId}
-        className={`input-base ${error ? 'border-brand-red focus:border-brand-red focus:ring-brand-red/30' : ''} ${className}`}
+        className={`input-base ${error ? 'border-danger focus:border-danger focus:ring-danger/30' : ''} ${className}`}
         {...props}
       />
       {hint && !error && <p className="form-hint">{hint}</p>}
