@@ -128,25 +128,26 @@ export default function Sidebar() {
           if (section.label === 'SETTINGS' && !isAdmin) return null;
           return (
             <div key={section.label}>
-            <p className="text-2xs font-medium text-text-muted uppercase tracking-widest px-3 pb-1.5 select-none">
-              {section.label}
-            </p>
-            <div className="space-y-0.5">
-              {section.items.map(({ path, label, icon: Icon }) => (
-                <NavLink
-                  key={path}
-                  to={path}
-                  className={({ isActive }) =>
-                    `nav-item ${isActive ? 'active' : ''}`
-                  }
-                >
-                  <Icon size={16} className="flex-shrink-0" />
-                  <span className="truncate">{label}</span>
-                </NavLink>
-              ))}
+              <p className="text-2xs font-medium text-text-muted uppercase tracking-widest px-3 pb-1.5 select-none">
+                {section.label}
+              </p>
+              <div className="space-y-0.5">
+                {section.items.map(({ path, label, icon: Icon }) => (
+                  <NavLink
+                    key={path}
+                    to={path}
+                    className={({ isActive }) =>
+                      `nav-item ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <Icon size={16} className="flex-shrink-0" />
+                    <span className="truncate">{label}</span>
+                  </NavLink>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Bottom section */}
