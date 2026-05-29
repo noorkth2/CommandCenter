@@ -55,9 +55,16 @@ const NAV_SECTIONS = [
   },
 ];
 
+const ADMIN_EMAILS = [
+  'kayastha.noor1100@gmail.com',
+  'niroj.mahrjan@gmail.com',
+];
+
 export default function Sidebar() {
   const { user, logout } = useAuthStore();
   const toast = useToast();
+  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
+
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof localStorage !== 'undefined') {
       const stored = localStorage.getItem('theme');
@@ -114,11 +121,13 @@ export default function Sidebar() {
           </div>
         </div>
       )}
-
+ 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
-        {NAV_SECTIONS.map((section) => (
-          <div key={section.label}>
+        {NAV_SECTIONS.map((section) => {
+          if (section.label === 'SETTINGS' && !isAdmin) return null;
+          return (
+            <div key={section.label}>
             <p className="text-2xs font-medium text-text-muted uppercase tracking-widest px-3 pb-1.5 select-none">
               {section.label}
             </p>

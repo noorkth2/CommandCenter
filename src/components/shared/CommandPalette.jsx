@@ -20,6 +20,7 @@ import { useIssueStore, canTransition } from '../../store/useIssueStore';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useSprintStore } from '../../store/useSprintStore';
 import { useAutomationStore } from '../../store/useAutomationStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { ISSUE_STATUS_LABELS } from '../../lib/constants';
 
 // ─── Navigation items ──────────────────────────────────────────────────────
@@ -136,6 +137,12 @@ export default function CommandPalette({ open, onClose }) {
   const fetchAutomations = useAutomationStore((s) => s.fetchAutomations);
   const manualTrigger = useAutomationStore((s) => s.manualTrigger);
 
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.email && [
+    'kayastha.noor1100@gmail.com',
+    'niroj.mahrjan@gmail.com',
+  ].includes(user.email.toLowerCase().trim());
+
   // Load store data on first open
   useEffect(() => {
     if (open && !loadedRef.current) {
@@ -159,6 +166,7 @@ export default function CommandPalette({ open, onClose }) {
 
     // Navigate
     const navResults = NAV_ITEMS
+      .filter((item) => item.path !== '/settings' || isAdmin)
       .map((item) => ({ ...item, _score: score(query, item.label) }))
       .filter((item) => item._score > 0)
       .sort((a, b) => b._score - a._score)
@@ -272,7 +280,7 @@ export default function CommandPalette({ open, onClose }) {
     // Flatten for keyboard nav
     const flat = groups.flatMap((g) => g.items);
     return { flat, groups };
-  }, [query, open, issues, projects, sprints, automations, navigate, onClose, transitionStatus, manualTrigger]);
+  }, [query, open, issues, projects, sprints, automations, navigate, onClose, transitionStatus, manualTrigger, isAdmin]);
 
   // Keyboard handler — only active when palette is open
   const handleKeyDown = useCallback((e) => {

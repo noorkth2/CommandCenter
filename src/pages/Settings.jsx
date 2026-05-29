@@ -25,12 +25,14 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
+import { Navigate } from 'react-router-dom';
 import { useToast } from '../components/ui/Toast';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Textarea from '../components/ui/Textarea';
 import { useWorkspaceStore } from '../store/useWorkspaceStore';
 import { SETTING_DEFAULTS } from '../store/useSettingsStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 const schema = z.object({
   zen_api_key: z.string().optional(),
@@ -52,7 +54,19 @@ const schema = z.object({
   jira_push_status_enabled: z.boolean().default(false),
 });
 
+const ADMIN_EMAILS = [
+  'kayastha.noor1100@gmail.com',
+  'niroj.mahrjan@gmail.com',
+];
+
 export default function Settings() {
+  const { user } = useAuthStore();
+  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
+
+  if (!isAdmin) {
+    return <Navigate to="/access-denied" replace />;
+  }
+
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
