@@ -174,7 +174,25 @@ function startAuthServer() {
               throw new Error(userError?.message || 'Failed to authenticate user profile.');
             }
 
-            if (!ALLOWED_EMAILS.includes(user.email)) {
+            let allowedEmails = ALLOWED_EMAILS;
+            const { data: settingsData, error: settingsError } = await supabaseClient
+              .from('settings')
+              .select('value')
+              .eq('key', 'allowed_emails')
+              .maybeSingle();
+
+            if (!settingsError && settingsData?.value) {
+              try {
+                const parsed = JSON.parse(settingsData.value);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  allowedEmails = parsed.map((e) => e.toLowerCase().trim());
+                }
+              } catch (e) {
+                console.warn('[auth] Failed to parse allowed_emails from settings:', e.message);
+              }
+            }
+
+            if (!allowedEmails.includes(user.email.toLowerCase().trim())) {
               throw new Error(`Your email (${user.email}) is not in the allowed list of CommandCenter workspace developers.`);
             }
 
