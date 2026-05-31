@@ -426,3 +426,16 @@
 .toast-error { border-left: 3px solid rgb(var(--danger-rgb)); }
 .toast-warning { border-left: 3px solid rgb(var(--warning-rgb)); }
 .toast-info { border-left: 3px solid rgb(var(--accent-rgb)); }
+
+/* ── Chatbase UI Hiding ─────────────────────────── */
+/* Force hide the floating bubble while keeping identity logic */
+#chatbase-bubble-button,
+#chatbase-bubble-window,
+iframe[src*="chatbase.co/chatbot-iframe"] {
+  display: none !important;
+}
+
+/* BUT ensure the one inside our AI Assistant panel stays visible */
+.animate-slide-in-right iframe[src*="chatbase.co/chatbot-iframe"] {
+  display: block !important;
+}

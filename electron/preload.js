@@ -102,4 +102,10 @@ contextBridge.exposeInMainWorld('electron', {
   bugReport: {
     captureContext: () => ipcRenderer.invoke('bugReport:capture-context'),
   },
+  /**
+   * Chatbase Identity
+   */
+  chatbase: {
+    getToken: (user) => ipcRenderer.invoke('chatbase:get-token', user),
+  },
 });

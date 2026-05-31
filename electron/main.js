@@ -186,7 +186,7 @@ function registerIpcHandlers() {
 
   // ── Settings ─────────────────────────────────────────────────────
   const { encrypt, decrypt } = require('./ipc/encrypt');
-  const SECRET_KEYS = new Set(['zen_api_key', 'smtp_pass', 'jira_api_token']);
+  const SECRET_KEYS = new Set(['zen_api_key', 'gemini_api_key', 'chatbase_secret', 'smtp_pass', 'jira_api_token']);
   const MASKED = '••••••••••••';
 
   ipcMain.handle('settings:get', async (_event, key) => {
@@ -328,6 +328,36 @@ function registerIpcHandlers() {
   });
   ipcMain.handle('jira:push-status', async (_event, jiraId, ccStatus) => {
     return pushStatus(jiraId, ccStatus);
+  });
+
+  // ── Chatbase Identity ──────────────────────────────────────────
+  ipcMain.handle('chatbase:get-token', async (_event, user) => {
+    const jwt = require('jsonwebtoken');
+    const { getSupabaseClient } = require('./ipc/supabase.ipc');
+    try {
+      const client = getSupabaseClient();
+      const { data, error } = await client
+        .from('settings')
+        .select('value')
+        .eq('key', 'chatbase_secret')
+        .single();
+
+      if (error || !data?.value) return { token: null, error: 'Chatbase secret not configured' };
+
+      const secret = decrypt(data.value);
+      const token = jwt.sign(
+        {
+          user_id: user.id,
+          email: user.email,
+          name: user.name,
+        },
+        secret,
+        { expiresIn: '1h' }
+      );
+      return { token, error: null };
+    } catch (err) {
+      return { token: null, error: err.message };
+    }
   });
 
   // ── Bug Report Capture ──────────────────────────────────────────

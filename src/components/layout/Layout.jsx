@@ -5,6 +5,7 @@ import TopBar from './TopBar';
 import ConflictResolutionModal from '../shared/ConflictResolutionModal';
 import CommandPalette from '../shared/CommandPalette';
 import NotificationGenerator from '../notifications/NotificationGenerator';
+import ChatbaseLoader from '../shared/ChatbaseLoader';
 import { useSync } from '../../lib/SyncContext';
 
 /**
@@ -86,6 +87,7 @@ export default function Layout() {
           <Outlet />
         </div>
       </main>
+      <ChatbaseLoader />
       <ConflictModalManager onRegisterOpen={handleRegisterOpen} />
       <NotificationGenerator />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />

@@ -1,7 +1,7 @@
 # CommandCenter — Complete Project Reference & Dependency Graph
 
 > **Purpose:** Drop this file into any AI chat to give full context about the CommandCenter project.  
-> **Generated from:** Source analysis of `/CommandCenter` workspace (v1.0.5 package / post-v1.0.6 features merged)
+> **Generated from:** Source analysis of `/CommandCenter` workspace (v2.0.0 release)
 
 ---
 
@@ -12,12 +12,12 @@
 | Property | Value |
 |---|---|
 | App ID | `com.commandcenter.app` |
-| Version | `1.0.5` (package.json) |
+| Version | `2.0.0` (package.json) |
 | Entry (Electron) | `electron/main.js` |
 | Entry (Renderer) | `src/main.jsx` → `src/App.jsx` |
 | Auth | Supabase Google OAuth (allowlist-gated) |
 | Database | Supabase (PostgreSQL) — hosted |
-| AI Engine | OpenCode Zen (`claude-sonnet-4-6` via Anthropic-compatible endpoint `https://opencode.ai/zen/v1`) |
+| AI Engine | Multi-provider: OpenCode Zen (Claude/DeepSeek) and Google Gemini (1.5 Flash/Pro) |
 | Email | Nodemailer via SMTP (credentials stored in DB) |
 | Native Notifications | Electron Notification API (OS-native) |
 | Build tool | Vite 6 + electron-builder 25 |
@@ -25,13 +25,11 @@
 | State Management | Zustand 5 |
 | Routing | React Router DOM 6 (HashRouter) |
 | Testing | Vitest 4 + jsdom — 5 test files across `store/__tests__/` and `lib/__tests__/` |
-| UI Polish | Responsive layout pass: consistent card heights via `min-h`, compressed spacing, TopBar overflow handling, Import visual progress indicator |
-| AI Provider | Switched from direct Anthropic Claude API to OpenCode Zen gateway (`claude-sonnet-4-6` via `https://opencode.ai/zen/v1`); settings key renamed to `zen_api_key` |
-| Theming | Sidebar dark/light mode toggle — persisted in `localStorage` as `theme` key, applied via `document.documentElement.classList` |
-| Issues Kanban | New `src/components/issues/IssuesKanban.jsx` — DnD kanban for Issues page (reuses `@hello-pangea/dnd`) |
-| Sprint Burndown | New `src/components/sprints/BurndownChart.jsx` — ideal vs. actual burndown chart (Recharts + date-fns) |
-| Offline Queue | `syncQueue.js` expanded with `removeEntry()`, `updateEntry()`, `queueDepth()`, event system (`onSyncEvent`/`emitEvent`) |
-| storeUtils | `safeMutate()` + `isConflictError()` added — network-safe mutation wrapper used by all stores |
+| Visual Bug Reporting | **New in v2.0:** Global "Report Bug" widget with automatic environment context capture (OS, resolution, screenshot) via Electron IPC. |
+| QA Metrics (MTTR) | **New in v2.0:** Mean Time to Resolution tracking on Dashboard; separation of technical Severity from business Priority. |
+| Expanded Views | **New in v2.0:** Timeline (Gantt) and dense List views for Issues with persistent preference. |
+| AI Triage | **New in v2.0:** Single-issue Auto Triage suggesting Team and Priority based on description. |
+| SLA & DoD | **New in v2.0:** Hourly SLA monitoring for P0/P1 issues; mandatory "Definition of Done" checklists for kanban transitions; Tech Debt capacity tracking. |
 
 ---
 
@@ -61,9 +59,10 @@
 │                    IPC Channels             │  • Workspace Manager│ │
 │  (supabase:query, ai:generate, email:send,  │  • Command Palette│ │
 │   automation:trigger, settings:get/set,     │  • Conflict Resolver│ │
-│   export:all, auth:start-login-flow,        └────────────────┘  │
-│   workspace:list/add/remove/switch,                              │
-│   notification:show)                                             │
+│   export:all, auth:start-login-flow,        │  • Bug Report Capture│ │
+│   workspace:list/add/remove/switch,         └────────────────┘  │
+│   notification:show,                        │                   │
+│   bugReport:capture-context)                │                   │
 └─────────────────────────────────────────────────────────────────┘
                            │
                     ┌──────▼──────┐
@@ -121,7 +120,7 @@
 | `preload.js` | `contextBridge` — exposes `window.electron` API to renderer (secure IPC bridge); also exposes `window.electron.platform` for macOS-specific UI adjustments |
 | `auth.js` | Local HTTP server (port 54321) for Google OAuth callback flow |
 | `automations.js` | `AutomationEngine` class — evaluates rules and executes actions (QA entry, email, AI report) |
-| `cron.js` | `node-cron` scheduler — built-in daily sprint summary (23:00) + dynamic DB-driven schedules |
+| `cron.js` | `node-cron` scheduler — built-in daily sprint summary (23:00) + dynamic DB-driven schedules + **hourly SLA check** for P0/P1 issues |
 | `mailer.js` | Nodemailer wrapper — reads SMTP credentials from `settings` table, sends emails |
 | `generate-icons.js` | Dev utility — generates app icons for packaging |
 | `ipc/supabase.ipc.js` | Singleton Supabase client for main process; generic `handleSupabaseIpc` proxy; delegates to workspace.ipc for multi-tenant support |
@@ -213,7 +212,9 @@
 
 | File | Purpose |
 |---|---|
-| `IssuesKanban.jsx` | 9-column drag-and-drop Kanban for the Issues page using `@hello-pangea/dnd`; calls `transitionStatus()` on drop; shows `PriorityBadge`, assignee avatar, and label chips per card |
+| `IssuesKanban.jsx` | 9-column drag-and-drop Kanban for the Issues page using `@hello-pangea/dnd`; **mandatory Definition of Done check** on drop to "Done"; shows Priority/Severity and Tech Debt badges |
+| `IssuesList.jsx` | Dense, sortable data table view using `@tanstack/react-table`; provides overview of all issue metadata |
+| `IssuesTimeline.jsx` | Gantt-style timeline visualizing issue duration and schedules over a 30-day window |
 
 #### `src/components/sprints/`
 
@@ -229,6 +230,8 @@
 | `AIGenerateButton.jsx` | Reusable "Generate with AI" button with loading state |
 | `StatusBadge.jsx` | Colored badge for status values (uses `STATUS_COLORS` from constants) |
 | `PriorityBadge.jsx` | Colored badge for priority values (uses `PRIORITY_COLORS` from constants) |
+| `SeverityBadge.jsx` | Colored badge for technical severity (uses `SEVERITY_COLORS` from constants) |
+| `BugReportWidget.jsx` | Global "Report Bug" button in TopBar; captures technical environment context + screenshot via IPC |
 | `CommandPalette.jsx` | Cmd+K global search/navigation modal with fuzzy matching |
 | `ConflictResolutionModal.jsx` | Three-way diff UI for sync conflicts (keep server / overwrite / discard) |
 
@@ -299,6 +302,9 @@ SQL migration files for the Supabase database schema.
 | `004_add_running_flag.sql` | Adds `running` column to projects |
 | `005_add_app_team.sql` | Adds 'app' to issues team check constraint |
 | `006_add_time_entries.sql` | Time tracking table with FK to issues + indexes |
+| `021_visual_bug_reporting.sql` | Adds `environment_context` and `attachments` columns to issues table |
+| `022_qa_standardization.sql` | Separates technical `severity` from business `priority` in issues and qa_items |
+| `023_tech_debt_and_dod.sql` | Adds `is_tech_debt` flag and `definition_of_done` checklist to issues |
 
 ---
 
@@ -561,6 +567,7 @@ sequenceDiagram
 | `workspace:remove` | R→M | `ipc/workspace.ipc.js` | Removes a workspace by ID |
 | `workspace:switch` | R→M | `ipc/workspace.ipc.js` | Switches active workspace, returns URL + anonKey to renderer, resets main process client |
 | `notification:show` | R→M | `ipc/notification.ipc.js` | Sends a native OS desktop notification |
+| `bugReport:capture-context` | R→M | `main.js` (inline) | Captures OS, screen, window context + screenshot |
 
 ---
 
@@ -573,8 +580,8 @@ sequenceDiagram
 | `products` | `id` (uuid) | `name`, `description`, `status`, `tech_stack[]`, `client_id` |
 | `clients` | `id` (uuid) | `name`, `contact_email`, `company`, `status` |
 | `projects` | `id` (uuid) | `name`, `status`, `priority`, `category`, `tech_stack[]`, `deadline`, `client_id`, `product_id` |
-| `issues` | `id` (uuid) | `title`, `description`, `status`, `priority`, `labels[]`, `project_id`, `sprint_id`, `team`, `environment`, `assignee`, `completed_at` |
-| `qa_items` | `id` (uuid) | `test_case`, `project_id`, `issue_id`, `module`, `test_type`, `severity`, `status`, `steps_to_reproduce`, `expected_result`, `actual_result`, `environment`, `tested_on` |
+| `issues` | `id` (uuid) | `title`, `description`, `status`, `priority`, `severity`, `labels[]`, `project_id`, `sprint_id`, `team`, `environment`, `assignee`, `completed_at`, `environment_context`, `attachments`, `is_tech_debt`, `definition_of_done` |
+| `qa_items` | `id` (uuid) | `test_case`, `project_id`, `issue_id`, `module`, `test_type`, `severity`, `priority`, `status`, `steps_to_reproduce`, `expected_result`, `actual_result`, `environment`, `tested_on` |
 | `deployments` | `id` (uuid) | `name`, `project_id`, `environment`, `status`, `services_affected[]`, `rollback_plan`, `expected_downtime`, `deployed_at` |
 | `sprints` | `id` (uuid) | `name`, `status`, `start_date`, `end_date`, `goals`, `ai_summary`, `completed_tasks_count` |
 | `ai_reports` | `id` (uuid) | `type`, `title`, `content`, `related_id`, `related_type`, `is_draft` |
@@ -620,8 +627,10 @@ rolled_back → backlog (only)
 | Project Category | `fyp`, `coursework`, `client`, `personal` |
 | Issue Teams | `backend`, `frontend`, `qa`, `ops`, `app` |
 | Issue Environments | `local`, `staging`, `production` |
+| Issue Severities | `critical`, `high`, `medium`, `low` |
 | QA Status | `to_test`, `in_progress`, `pass`, `fail`, `blocked` |
 | QA Severity | `critical`, `high`, `medium`, `low` |
+| QA Priority | `p0` (Critical), `p1` (High), `p2` (Medium), `p3` (Low) |
 | QA Test Type | `functional`, `ui`, `integration`, `regression`, `edge_case` |
 | Deployment Status | `planned`, `in_progress`, `success`, `failed`, `rolled_back` |
 | Deployment Envs | `dev`, `staging`, `production` |
@@ -882,6 +891,10 @@ flowchart TD
 | Key | Purpose |
 |---|---|
 | `zen_api_key` | OpenCode Zen API key for AI report generation (encrypted via `safeStorage` before storage) — get yours at `opencode.ai/auth` |
+| `zen_model` | The specific model to use with Zen (e.g., `claude-sonnet-4-6`, `deepseek-v4-flash`) |
+| `gemini_api_key` | Google Gemini API key (encrypted via `safeStorage` before storage) — get yours at `aistudio.google.com` |
+| `gemini_model` | The specific Gemini model to use (e.g., `gemini-1.5-flash`, `gemini-1.5-pro`) |
+| `ai_provider` | Active AI provider (`zen` or `gemini`) |
 | `smtp_host` | SMTP server hostname |
 | `smtp_port` | SMTP port (default 587) |
 | `smtp_user` | SMTP username / from email |
@@ -964,7 +977,7 @@ npm run test:watch
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 VITE_APP_NAME=CommandCenter
-VITE_APP_VERSION=1.0.5
+VITE_APP_VERSION=2.1.0
 ```
 
 > `.env` is loaded by **both** Vite (at build time, injected via `import.meta.env`) and Electron main process (at runtime, parsed manually from file). All `VITE_` prefixed vars are available in both contexts.

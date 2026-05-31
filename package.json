@@ -1,6 +1,6 @@
 {
   "name": "commandcenter",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "PM Command Center — unified productivity tool for teams",
   "main": "electron/main.js",
   "homepage": "./",
@@ -19,11 +19,13 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
+    "@google/generative-ai": "^0.24.1",
     "@hello-pangea/dnd": "^17.0.0",
     "@hookform/resolvers": "^5.4.0",
     "@supabase/supabase-js": "^2.49.4",
     "@tanstack/react-table": "^8.21.3",
     "date-fns": "^4.1.0",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.511.0",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.1",

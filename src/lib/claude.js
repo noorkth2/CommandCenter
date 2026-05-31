@@ -87,6 +87,8 @@ function generateLocalSummary(type, data) {
         confidence: 0.8,
         reasoning: 'Local triage rule fallback'
       });
+    case 'general_chat':
+      return "I'm currently running in local mode because the AI provider is not fully configured or the connection failed. Please ensure you have selected an AI Provider (Zen or Gemini) and entered a valid API Key in Settings.";
     default:
       return `**Report (Local)**\n\nReport type \`${type}\` is not supported locally.`;
   }
@@ -429,6 +431,8 @@ Example:
   "reasoning": "Database connection error affecting all users"
 }
 `.trim(),
+
+  general_chat: (data) => data.customPrompt || "Hello! How can I help you today?",
 };
 
 // ─── Public API ───────────────────────────────────────────────────────────────

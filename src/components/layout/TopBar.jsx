@@ -5,6 +5,7 @@ import { useSync } from '../../lib/SyncContext';
 import { useTimeTrackingStore } from '../../store/useTimeTrackingStore';
 import NotificationBell from '../notifications/NotificationBell';
 import BugReportWidget from '../shared/BugReportWidget';
+import AIAssistant from '../shared/AIAssistant';
 
 const PAGE_TITLES = {
   '/dashboard': { title: 'Dashboard', subtitle: 'Overview of your PM operations' },
@@ -28,6 +29,7 @@ export default function TopBar({ onOpenPalette, onOpenConflicts }) {
   const pageInfo = PAGE_TITLES[pathname] ?? { title: 'CommandCenter', subtitle: '' };
   const hasConflicts = conflicts.length > 0;
 
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [timerElapsed, setTimerElapsed] = useState('');
   useEffect(() => {
     if (!activeTimer) { setTimerElapsed(''); return; }
@@ -102,10 +104,15 @@ export default function TopBar({ onOpenPalette, onOpenConflicts }) {
         )}
 
         {/* AI Assistant Button */}
-        <button className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors cursor-pointer">
+        <button
+          onClick={() => setAssistantOpen(true)}
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors cursor-pointer"
+        >
           <Sparkles size={14} />
           AI Assistant
         </button>
+
+        <AIAssistant open={assistantOpen} onClose={() => setAssistantOpen(false)} />
 
         {/* Sync status indicator — clickable when conflicts exist */}
         {hasConflicts ? (

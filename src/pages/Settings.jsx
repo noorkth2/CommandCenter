@@ -35,7 +35,12 @@ import { SETTING_DEFAULTS } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
 
 const schema = z.object({
+  ai_provider: z.enum(['zen', 'gemini']).default('zen'),
   zen_api_key: z.string().optional(),
+  zen_model: z.string().default('claude-sonnet-4-6'),
+  gemini_api_key: z.string().optional(),
+  gemini_model: z.string().default('gemini-1.5-flash'),
+  chatbase_secret: z.string().optional(),
   smtp_host: z.string().optional(),
   smtp_port: z.string().optional(),
   smtp_user: z.string().optional(),
@@ -114,7 +119,12 @@ export default function Settings() {
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
+      ai_provider: 'zen',
       zen_api_key: '',
+      zen_model: 'claude-sonnet-4-6',
+      gemini_api_key: '',
+      gemini_model: 'gemini-1.5-flash',
+      chatbase_secret: '',
       smtp_host: '',
       smtp_port: '587',
       smtp_user: '',
@@ -145,7 +155,12 @@ export default function Settings() {
       setLoading(true);
       try {
     const keys = [
+        'ai_provider',
         'zen_api_key',
+        'zen_model',
+        'gemini_api_key',
+        'gemini_model',
+        'chatbase_secret',
         'smtp_host',
         'smtp_port',
         'smtp_user',
@@ -522,26 +537,90 @@ export default function Settings() {
         {/* ── Left Column ─────────────────────────────────────────────────── */}
         <div className="space-y-6">
 
-          {/* Card: AI Provider (OpenCode Zen) */}
+          {/* Card: AI Provider */}
           <div className="card p-5 space-y-4">
             <div className="flex items-center gap-3 border-b border-border pb-3">
               <div className="w-8 h-8 rounded bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
                 <Cpu size={16} />
               </div>
-              <div>
-                <h3 className="font-semibold text-text-primary">AI Provider — OpenCode Zen</h3>
-                <p className="text-2xs text-text-muted">Set up AI report generation via OpenCode Zen</p>
+              <div className="flex-1">
+                <h3 className="font-semibold text-text-primary">AI Service Provider</h3>
+                <p className="text-2xs text-text-muted">Choose your intelligence engine</p>
               </div>
+              <select
+                className="bg-bg-elevated border border-border rounded px-2 py-1 text-xs text-text-primary focus:border-accent outline-none"
+                {...register('ai_provider')}
+              >
+                <option value="zen">OpenCode Zen</option>
+                <option value="gemini">Google Gemini</option>
+              </select>
             </div>
 
+            {watch('ai_provider') === 'zen' ? (
+              <div className="space-y-4 animate-fade-in">
+                <div className="relative">
+                  <Input
+                    label="Zen API Key"
+                    type={showApiKey ? 'text' : 'password'}
+                    placeholder="oc_..."
+                    hint="Get your key at opencode.ai/auth"
+                    error={errors.zen_api_key?.message}
+                    {...register('zen_api_key')}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-8 text-text-secondary hover:text-text-primary"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                  >
+                    {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <Input
+                  label="Zen Model"
+                  placeholder="opencode/deepseek-v4-flash-free"
+                  hint="e.g., opencode/deepseek-v4-flash-free or claude-3-5-sonnet"
+                  error={errors.zen_model?.message}
+                  {...register('zen_model')}
+                />
+              </div>
+            ) : (
+              <div className="space-y-4 animate-fade-in">
+                <div className="relative">
+                  <Input
+                    label="Gemini API Key"
+                    type={showApiKey ? 'text' : 'password'}
+                    placeholder="AIza..."
+                    hint="Get your key at aistudio.google.com"
+                    error={errors.gemini_api_key?.message}
+                    {...register('gemini_api_key')}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-8 text-text-secondary hover:text-text-primary"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                  >
+                    {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <Input
+                  label="Gemini Model"
+                  placeholder="gemini-1.5-flash"
+                  hint="e.g., gemini-1.5-flash or gemini-1.5-pro"
+                  error={errors.gemini_model?.message}
+                  {...register('gemini_model')}
+                />
+              </div>
+            )}
+
+            <div className="divider" />
             <div className="relative">
               <Input
-                label="Zen API Key"
+                label="Chatbase Identity Secret"
                 type={showApiKey ? 'text' : 'password'}
-                placeholder="oc_..."
-                hint="Used to generate RCAs, daily summaries, and deployment notes. Get your key at opencode.ai/auth"
-                error={errors.zen_api_key?.message}
-                {...register('zen_api_key')}
+                placeholder="cs_..."
+                hint="Used to securely identify users to Chatbase. Found in Chatbase dashboard > Settings > Security"
+                error={errors.chatbase_secret?.message}
+                {...register('chatbase_secret')}
               />
               <button
                 type="button"
