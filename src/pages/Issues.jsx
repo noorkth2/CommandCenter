@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Columns, List, Trash2, Copy, Sparkles, MoreHorizontal, CircleDot } from 'lucide-react';
+import { Plus, Columns, List, Trash2, Copy, Sparkles, MoreHorizontal, CircleDot, Calendar, CheckSquare, Square, X as XIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -15,6 +15,8 @@ import { useAI } from '../hooks/useAI';
 import { useAutomations } from '../hooks/useAutomations';
 import { useTimeTrackingStore } from '../store/useTimeTrackingStore';
 import TimerControl from '../components/timetracking/TimerControl';
+import IssuesList from '../components/issues/IssuesList';
+import IssuesTimeline from '../components/issues/IssuesTimeline';
 import { useToast } from '../components/ui/Toast';
 import Button from '../components/ui/Button';
 import Dialog from '../components/ui/Dialog';
@@ -24,10 +26,11 @@ import Textarea from '../components/ui/Textarea';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import StatusBadge from '../components/shared/StatusBadge';
 import PriorityBadge from '../components/shared/PriorityBadge';
+import SeverityBadge from '../components/shared/SeverityBadge';
 import AIGenerateButton from '../components/shared/AIGenerateButton';
 import Dropdown from '../components/ui/Dropdown';
 import {
-  ISSUE_STATUSES, ISSUE_STATUS_LABELS, ISSUE_PRIORITIES,
+  ISSUE_STATUSES, ISSUE_STATUS_LABELS, ISSUE_PRIORITIES, ISSUE_SEVERITIES, ISSUE_SEVERITY_LABELS,
   ISSUE_TEAMS, ISSUE_TEAM_LABELS, ISSUE_ENVIRONMENTS, PROJECT_PRIORITY_LABELS,
 } from '../lib/constants';
 
@@ -55,12 +58,18 @@ const schema = z.object({
   description: z.string().optional(),
   status: z.enum(ISSUE_STATUSES),
   priority: z.enum(['p0', 'p1', 'p2', 'p3']),
+  severity: z.enum(['critical', 'high', 'medium', 'low']),
   labels: z.string().optional(),
   project_id: z.string().optional(),
   sprint_id: z.string().optional(),
   team: z.string().optional(),
   environment: z.string().optional(),
   assignee: z.string().optional(),
+  is_tech_debt: z.boolean().optional(),
+  definition_of_done: z.array(z.object({
+    text: z.string(),
+    checked: z.boolean()
+  })).optional(),
   steps_to_reproduce: z.string().optional(),
   expected_result: z.string().optional(),
   actual_result: z.string().optional(),
@@ -74,11 +83,16 @@ export default function Issues() {
   const { projects, fetch: fetchProjects } = useProjectStore();
   const { sprints, fetch: fetchSprints } = useSprintStore();
   const { create: createQA } = useQAStore();
-  const { generate, triage: runAiTriage, generating: aiGenerating } = useAI();
+  const { generate, triage: runAiTriage, triageSingle, generating: aiGenerating } = useAI();
   const { trigger } = useAutomations();
   const toast = useToast();
 
-  const [view, setView] = useState('board'); // 'board' | 'list'
+  const [view, setView] = useState(() => localStorage.getItem('cc_issues_view') ?? 'board'); // 'board' | 'list' | 'timeline'
+
+  const toggleView = (newView) => {
+    setView(newView);
+    localStorage.setItem('cc_issues_view', newView);
+  };
   const [panelOpen, setPanelOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
@@ -98,11 +112,26 @@ export default function Issues() {
   const [triaging, setTriaging] = useState(false);
   const [selectedTriageIds, setSelectedTriageIds] = useState(new Set());
 
-  const { register, handleSubmit, reset, watch, control, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, watch, control, setValue, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { status: 'backlog', priority: 'p2', labels: '' },
   });
 
+  const { fields: dodFields, append: appendDod, remove: removeDod } = useFieldArray({
+    control,
+    name: 'definition_of_done',
+  });
+
+  const [newDodItem, setNewDodItem] = useState('');
+
+  const addDodItem = () => {
+    if (!newDodItem.trim()) return;
+    appendDod({ text: newDodItem.trim(), checked: false });
+    setNewDodItem('');
+  };
+
+  const watchedTitle = watch('title');
+  const watchedDesc = watch('description');
   const watchedLabels = watch('labels', '');
 
   useEffect(() => {
@@ -113,7 +142,16 @@ export default function Issues() {
 
   const openCreate = (defaultStatus = 'backlog') => {
     setEditing(null);
-    reset({ status: defaultStatus, priority: 'p2', labels: '', title: '' });
+    reset({
+      status: defaultStatus,
+      priority: 'p2',
+      severity: 'medium',
+      labels: '',
+      title: '',
+      description: '**Steps to Reproduce**\n1. \n\n**Expected Results**\n\n\n**Actual Results**\n',
+      is_tech_debt: false,
+      definition_of_done: [],
+    });
     setPanelOpen(true);
   };
 
@@ -124,12 +162,15 @@ export default function Issues() {
       description: issue.description ?? '',
       status: issue.status,
       priority: issue.priority,
+      severity: issue.severity ?? 'medium',
       labels: (issue.labels ?? []).join(', '),
       project_id: issue.project_id ?? '',
       sprint_id: issue.sprint_id ?? '',
       team: issue.team ?? '',
       environment: issue.environment ?? '',
       assignee: issue.assignee ?? '',
+      is_tech_debt: issue.is_tech_debt ?? false,
+      definition_of_done: issue.definition_of_done ?? [],
       steps_to_reproduce: issue.steps_to_reproduce ?? '',
       expected_result: issue.expected_result ?? '',
       actual_result: issue.actual_result ?? '',
@@ -296,6 +337,20 @@ export default function Issues() {
 
   const isCritical = currentLabels.includes('critical');
 
+  const handleAutoTriage = async () => {
+    if (!watchedTitle) return toast.error('Please enter a title first');
+    try {
+      const result = await triageSingle({ title: watchedTitle, description: watchedDesc });
+      if (result) {
+        if (result.suggested_priority) setValue('priority', result.suggested_priority);
+        if (result.suggested_team) setValue('team', result.suggested_team);
+        toast.success(`AI Triage: Suggested ${result.suggested_team} (${result.suggested_priority})`);
+      }
+    } catch (err) {
+      toast.error('AI Triage failed: ' + err.message);
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       {/* Header */}
@@ -307,10 +362,25 @@ export default function Issues() {
         <div className="flex items-center gap-2">
           {/* View toggle */}
           <div className="flex items-center gap-0.5 bg-bg-elevated border border-border rounded p-0.5">
-            <button onClick={() => setView('board')} className={`btn-icon w-7 h-7 ${view === 'board' ? 'bg-bg-elevated text-text-primary' : ''}`} title="Board view">
+            <button
+              onClick={() => toggleView('board')}
+              className={`btn-icon w-7 h-7 ${view === 'board' ? 'bg-bg-elevated text-text-primary shadow-sm' : ''}`}
+              title="Board view"
+            >
               <Columns size={13} />
             </button>
-            <button onClick={() => setView('list')} className={`btn-icon w-7 h-7 ${view === 'list' ? 'bg-bg-elevated text-text-primary' : ''}`} title="List view">
+            <button
+              onClick={() => toggleView('timeline')}
+              className={`btn-icon w-7 h-7 ${view === 'timeline' ? 'bg-bg-elevated text-text-primary shadow-sm' : ''}`}
+              title="Timeline view"
+            >
+              <Calendar size={13} />
+            </button>
+            <button
+              onClick={() => toggleView('list')}
+              className={`btn-icon w-7 h-7 ${view === 'list' ? 'bg-bg-elevated text-text-primary shadow-sm' : ''}`}
+              title="List view"
+            >
               <List size={13} />
             </button>
           </div>
@@ -391,64 +461,14 @@ export default function Issues() {
         </DragDropContext>
       )}
 
+      {/* Timeline View */}
+      {view === 'timeline' && !loading && (
+        <IssuesTimeline issues={issues} onCardClick={openEdit} />
+      )}
+
       {/* List View */}
       {view === 'list' && !loading && (
-        <div className="card overflow-hidden">
-          {issues.length === 0 ? (
-            <div className="empty-state">
-              <CircleDot size={40} className="empty-state-icon" />
-              <p className="empty-state-title">No issues yet</p>
-              <Button variant="primary" size="sm" onClick={() => openCreate()}><Plus size={14} /> New Issue</Button>
-            </div>
-          ) : (
-            <div className="table-wrapper">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Title</th>
-                    <th>Status</th>
-                    <th>Priority</th>
-                    <th>Project</th>
-                    <th>Team</th>
-                    <th>Created</th>
-                    <th className="w-12"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {issues.map((issue) => (
-                    <tr key={issue.id} className="cursor-pointer" onClick={() => openEdit(issue)}>
-                      <td>
-                        <span className="font-medium text-text-primary">{issue.title}</span>
-                        {(issue.labels ?? []).length > 0 && (
-                          <div className="flex gap-1 mt-1 flex-wrap">
-                            {issue.labels.slice(0, 3).map(l => (
-                              <span key={l} className="badge bg-bg-elevated text-text-muted border-border">{l}</span>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                      <td><StatusBadge status={issue.status} /></td>
-                      <td><PriorityBadge priority={issue.priority} /></td>
-                      <td><span className="text-xs text-text-secondary">{issue.projects?.name ?? '—'}</span></td>
-                      <td><span className="text-xs text-text-secondary capitalize">{issue.team ?? '—'}</span></td>
-                      <td><span className="text-xs text-text-muted">{format(new Date(issue.created_at), 'MMM d')}</span></td>
-                      <td onClick={e => e.stopPropagation()}>
-                        <Dropdown
-                          trigger={<Button variant="icon"><MoreHorizontal size={15} /></Button>}
-                          items={[
-                            { label: 'Edit', onClick: () => openEdit(issue) },
-                            { separator: true },
-                            { label: 'Delete', danger: true, onClick: () => setConfirmId(issue.id) },
-                          ]}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <IssuesList issues={issues} onEdit={openEdit} onDelete={(id) => setConfirmId(id)} />
       )}
 
       {loading && (
@@ -489,11 +509,31 @@ export default function Issues() {
         }
       >
         <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-          <Input label="Title" placeholder="Brief description of the issue" required error={errors.title?.message} {...register('title')} />
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Input label="Title" placeholder="Brief description of the issue" required error={errors.title?.message} {...register('title')} />
+            </div>
+            {!editing && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="mb-1"
+                onClick={handleAutoTriage}
+                loading={aiGenerating}
+                title="Automatically suggest priority and team based on title/description"
+              >
+                <Sparkles size={13} className="mr-1" /> Auto Triage
+              </Button>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <Select label="Status" options={statusOptions} error={errors.status?.message} {...register('status')} />
-            <Select label="Priority" options={toOptions(ISSUE_PRIORITIES, PROJECT_PRIORITY_LABELS)} {...register('priority')} />
+            <div className="grid grid-cols-2 gap-2">
+              <Select label="Priority" options={toOptions(ISSUE_PRIORITIES, PROJECT_PRIORITY_LABELS)} {...register('priority')} />
+              <Select label="Severity" options={toOptions(ISSUE_SEVERITIES, ISSUE_SEVERITY_LABELS)} {...register('severity')} />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -525,6 +565,76 @@ export default function Issues() {
             {...register('labels')}
           />
 
+          <div className="flex items-center gap-2 py-2">
+            <input
+              type="checkbox"
+              id="is_tech_debt"
+              className="w-4 h-4 rounded border-border text-accent focus:ring-accent bg-bg-surface"
+              {...register('is_tech_debt')}
+            />
+            <label htmlFor="is_tech_debt" className="text-xs font-medium text-text-primary cursor-pointer">
+              This issue is Technical Debt / Refactoring
+            </label>
+          </div>
+
+          <div className="space-y-3 pt-2 border-t border-border">
+            <h4 className="text-xs font-semibold text-text-primary flex items-center justify-between">
+              Definition of Done
+              <span className="text-2xs font-normal text-text-muted">
+                {dodFields.filter(f => f.checked).length} / {dodFields.length} completed
+              </span>
+            </h4>
+            
+            <div className="space-y-2">
+              {dodFields.map((field, index) => (
+                <div key={field.id} className="flex items-center gap-2 group">
+                  <Controller
+                    control={control}
+                    name={`definition_of_done.${index}.checked`}
+                    render={({ field: { value, onChange } }) => (
+                      <button
+                        type="button"
+                        onClick={() => onChange(!value)}
+                        className={`btn-icon w-5 h-5 ${value ? 'text-success' : 'text-text-muted hover:text-text-primary'}`}
+                      >
+                        {value ? <CheckSquare size={14} /> : <Square size={14} />}
+                      </button>
+                    )}
+                  />
+                  <Input
+                    className={`flex-1 !h-8 !py-0 !px-0 bg-transparent border-0 focus:ring-0 text-xs ${watch(`definition_of_done.${index}.checked`) ? 'text-text-muted line-through' : 'text-text-primary'}`}
+                    {...register(`definition_of_done.${index}.text`)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeDod(index)}
+                    className="btn-icon w-5 h-5 text-text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <XIcon size={14} />
+                  </button>
+                </div>
+              ))}
+              
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 flex items-center justify-center text-text-muted">
+                  <Plus size={14} />
+                </div>
+                <Input
+                  className="flex-1 !h-8 bg-transparent border-dashed border-border hover:border-border-hover focus:border-accent text-xs"
+                  placeholder="Add a DoD requirement..."
+                  value={newDodItem}
+                  onChange={(e) => setNewDodItem(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addDodItem();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
           <Textarea label="Description" placeholder="Detailed description of the issue…" rows={3} {...register('description')} />
           <Textarea label="Steps to Reproduce" placeholder="1. Go to...\n2. Click on...\n3. See error" rows={3} {...register('steps_to_reproduce')} />
 
@@ -533,6 +643,45 @@ export default function Issues() {
             <Textarea label="Actual Result" placeholder="What actually happened" rows={2} {...register('actual_result')} />
           </div>
         </form>
+
+        {/* Visual Bug Context */}
+        {editing?.environment_context && Object.keys(editing.environment_context).length > 0 && (
+          <div className="mt-6 pt-4 border-t border-border space-y-3">
+            <h4 className="text-xs font-semibold text-text-primary">Environment Context</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2 rounded bg-bg-elevated border border-border">
+                <p className="text-3xs text-text-muted uppercase">OS / ARCH</p>
+                <p className="text-2xs text-text-secondary">{editing.environment_context.os} / {editing.environment_context.arch}</p>
+              </div>
+              <div className="p-2 rounded bg-bg-elevated border border-border">
+                <p className="text-3xs text-text-muted uppercase">Screen</p>
+                <p className="text-2xs text-text-secondary">{editing.environment_context.screen?.width}x{editing.environment_context.screen?.height}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {editing?.attachments?.length > 0 && (
+          <div className="mt-4 space-y-3">
+            <h4 className="text-xs font-semibold text-text-primary">Attachments ({editing.attachments.length})</h4>
+            <div className="grid grid-cols-2 gap-3">
+              {editing.attachments.map((at, idx) => (
+                <div key={idx} className="relative group rounded border border-border bg-black/10 overflow-hidden aspect-video cursor-pointer" onClick={() => {
+                  const win = window.open();
+                  win.document.write(`<img src="${at.data}" style="max-width:100%; display:block; margin:auto;">`);
+                }}>
+                  {at.type === 'screenshot' && (
+                    <img src={at.data} alt={at.label} className="w-full h-full object-cover" />
+                  )}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center">
+                    <p className="text-2xs text-white font-medium truncate w-full">{at.label}</p>
+                    <span className="mt-1 text-3xs text-accent">Click to Enlarge</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Time Tracking Section */}
         {editing && (

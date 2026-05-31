@@ -95,4 +95,11 @@ contextBridge.exposeInMainWorld('electron', {
     sync: () => ipcRenderer.invoke('jira:sync'),
     pushStatus: (jiraId, status) => ipcRenderer.invoke('jira:push-status', jiraId, status),
   },
+
+  /**
+   * Visual Bug Reporting
+   */
+  bugReport: {
+    captureContext: () => ipcRenderer.invoke('bugReport:capture-context'),
+  },
 });

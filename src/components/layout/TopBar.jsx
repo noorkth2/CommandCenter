@@ -4,6 +4,7 @@ import { Search, RefreshCw, CloudOff, AlertTriangle, Clock, History, Mail, Spark
 import { useSync } from '../../lib/SyncContext';
 import { useTimeTrackingStore } from '../../store/useTimeTrackingStore';
 import NotificationBell from '../notifications/NotificationBell';
+import BugReportWidget from '../shared/BugReportWidget';
 
 const PAGE_TITLES = {
   '/dashboard': { title: 'Dashboard', subtitle: 'Overview of your PM operations' },
@@ -80,6 +81,9 @@ export default function TopBar({ onOpenPalette, onOpenConflicts }) {
         <button className="w-[34px] h-[34px] rounded-full bg-bg-surface border border-border flex items-center justify-center text-text-muted hover:border-accent hover:text-text-primary transition-colors cursor-pointer">
           <Mail size={16} />
         </button>
+
+        {/* Bug Report Widget */}
+        <BugReportWidget />
 
         {/* Notification Bell */}
         <NotificationBell />

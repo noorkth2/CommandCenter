@@ -103,6 +103,11 @@ export default function Sprints() {
     ? Math.round((completedIssues.length / activeSprintIssues.length) * 100)
     : 0;
 
+  const techDebtIssues = activeSprintIssues.filter(i => i.is_tech_debt);
+  const techDebtPercent = activeSprintIssues.length
+    ? Math.round((techDebtIssues.length / activeSprintIssues.length) * 100)
+    : 0;
+
   // Backlog issues (no sprint_id, not done, not cancelled)
   const backlogIssues = issues.filter(
     (i) => !i.sprint_id && i.status !== 'done' && i.status !== 'cancelled'
@@ -292,9 +297,10 @@ export default function Sprints() {
                         {activeSprint.end_date || '—'}
                       </span>
                     </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
                     <div className="col-span-2">
                       <span className="text-[10px] text-text-muted uppercase block font-medium mb-1">
-                        Progress ({progressPercent}%)
+                        Sprint Progress ({progressPercent}%)
                       </span>
                       <div className="progress-bar-track">
                         <div
@@ -304,6 +310,26 @@ export default function Sprints() {
                       </div>
                       <span className="text-[10px] text-text-muted block mt-1">
                         {completedIssues.length} of {activeSprintIssues.length} issues completed
+                      </span>
+                    </div>
+
+                    <div className="col-span-2">
+                      <span className="text-[10px] text-text-muted uppercase block font-medium mb-1 flex items-center justify-between">
+                        Tech Debt Allocation ({techDebtPercent}%)
+                        {techDebtPercent > 15 && (
+                          <span className="text-[10px] text-danger font-bold flex items-center gap-1">
+                            <AlertCircle size={10} /> Over Budget
+                          </span>
+                        )}
+                      </span>
+                      <div className="h-2 w-full bg-bg-elevated rounded-full overflow-hidden border border-border">
+                        <div
+                          className={`h-full transition-all ${techDebtPercent > 15 ? 'bg-danger' : 'bg-warning'}`}
+                          style={{ width: `${techDebtPercent}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-text-muted block mt-1">
+                        {techDebtIssues.length} of {activeSprintIssues.length} issues are tech debt
                       </span>
                     </div>
                   </div>

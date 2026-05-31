@@ -329,6 +329,33 @@ function registerIpcHandlers() {
   ipcMain.handle('jira:push-status', async (_event, jiraId, ccStatus) => {
     return pushStatus(jiraId, ccStatus);
   });
+
+  // ── Bug Report Capture ──────────────────────────────────────────
+  ipcMain.handle('bugReport:capture-context', async (event) => {
+    const { screen } = require('electron');
+    const win = BrowserWindow.fromWebContents(event.sender);
+    
+    // Capture environment info
+    const context = {
+      os: process.platform,
+      arch: process.arch,
+      version: app.getVersion(),
+      screen: screen.getPrimaryDisplay().size,
+      windowSize: win.getBounds(),
+      timestamp: new Date().toISOString(),
+      userAgent: event.sender.getUserAgent(),
+    };
+
+    // Capture screenshot as base64
+    try {
+      const image = await win.capturePage();
+      const screenshot = image.toDataURL(); // base64 string
+      return { data: { context, screenshot }, error: null };
+    } catch (err) {
+      console.error('[main] Bug report capture failed:', err.message);
+      return { data: { context, screenshot: null }, error: err.message };
+    }
+  });
 }
 
 // Prevent multiple instances

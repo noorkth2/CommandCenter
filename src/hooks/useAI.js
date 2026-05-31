@@ -92,5 +92,25 @@ export function useAI() {
     }
   }, []);
 
-  return { generate, generateInline, triage, generating, error };
+  const triageSingle = useCallback(async (issue) => {
+    setGenerating(true);
+    setError(null);
+    try {
+      const { content, error: aiError } = await generateReport('triage_single', issue);
+      if (aiError) throw new Error(aiError);
+      
+      let cleanContent = content.trim();
+      if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+      }
+      return JSON.parse(cleanContent);
+    } catch (err) {
+      setError(err.message);
+      return null;
+    } finally {
+      setGenerating(false);
+    }
+  }, []);
+
+  return { generate, generateInline, triage, triageSingle, generating, error };
 }

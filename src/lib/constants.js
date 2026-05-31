@@ -59,8 +59,16 @@ export const ISSUE_STATUS_LABELS = {
 };
 
 export const ISSUE_PRIORITIES = ['p0', 'p1', 'p2', 'p3'];
+export const ISSUE_SEVERITIES = ['critical', 'high', 'medium', 'low'];
 export const ISSUE_TEAMS = ['backend', 'frontend', 'qa', 'ops', 'app'];
 export const ISSUE_ENVIRONMENTS = ['local', 'staging', 'production'];
+
+export const ISSUE_SEVERITY_LABELS = {
+  critical: 'Critical',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+};
 
 export const ISSUE_TEAM_LABELS = {
   backend: 'Backend',
@@ -88,6 +96,7 @@ export const ISSUE_STATUS_TRANSITIONS = {
 
 export const QA_STATUSES = ['to_test', 'in_progress', 'pass', 'fail', 'blocked'];
 export const QA_SEVERITIES = ['critical', 'high', 'medium', 'low'];
+export const QA_PRIORITIES = ['p0', 'p1', 'p2', 'p3'];
 export const QA_TEST_TYPES = ['functional', 'ui', 'integration', 'regression', 'edge_case'];
 
 export const QA_STATUS_LABELS = {
@@ -219,6 +228,13 @@ export const PRIORITY_COLORS = {
   p3: 'bg-text-muted/15 text-text-secondary border-text-muted/30',
 };
 
+export const SEVERITY_COLORS = {
+  critical: 'bg-danger/15 text-danger border-danger/30',
+  high: 'bg-warning/15 text-warning border-warning/30',
+  medium: 'bg-accent/15 text-accent border-accent/30',
+  low: 'bg-text-muted/15 text-text-secondary border-text-muted/30',
+};
+
 // ─── JSDoc Types ─────────────────────────────────────────────────────────────
 
 /**
@@ -243,6 +259,7 @@ export const PRIORITY_COLORS = {
  * @property {string|null} description
  * @property {'backlog'|'todo'|'in_progress'|'testing'|'uat'|'ready_to_deploy'|'production'|'monitoring'|'done'|'cancelled'} status
  * @property {'p0'|'p1'|'p2'|'p3'} priority
+ * @property {'critical'|'high'|'medium'|'low'} severity
  * @property {string[]} labels
  * @property {string|null} project_id
  * @property {string|null} sprint_id
@@ -266,6 +283,7 @@ export const PRIORITY_COLORS = {
  * @property {string|null} module
  * @property {'functional'|'ui'|'integration'|'regression'|'edge_case'|null} test_type
  * @property {'critical'|'high'|'medium'|'low'} severity
+ * @property {'p0'|'p1'|'p2'|'p3'} priority
  * @property {'to_test'|'in_progress'|'pass'|'fail'|'blocked'} status
  * @property {string|null} steps_to_reproduce
  * @property {string|null} expected_result

@@ -190,6 +190,24 @@ export default function Dashboard() {
 
   const recentDeployments = deployments.slice(0, 3);
 
+  const mttr = useMemo(() => {
+    const resolvedIssues = issues.filter(
+      (i) => i.status === 'done' && i.completed_at && i.created_at
+    );
+    if (resolvedIssues.length === 0) return '—';
+
+    const totalResolutionTimeMs = resolvedIssues.reduce((sum, issue) => {
+      const created = new Date(issue.created_at);
+      const completed = new Date(issue.completed_at);
+      return sum + Math.max(0, completed - created);
+    }, 0);
+
+    const averageHours = totalResolutionTimeMs / (1000 * 60 * 60 * resolvedIssues.length);
+    return averageHours < 24
+      ? `${averageHours.toFixed(1)}h`
+      : `${(averageHours / 24).toFixed(1)}d`;
+  }, [issues]);
+
   const statCards = [
     {
       value: activeProjectsCount,
@@ -208,20 +226,20 @@ export default function Dashboard() {
       iconColor: 'text-success',
     },
     {
+      value: mttr,
+      label: 'Avg. Resolution (MTTR)',
+      icon: Clock,
+      tint: 'bg-accent/5',
+      iconBg: 'bg-accent/10',
+      iconColor: 'text-accent',
+    },
+    {
       value: `${qaPassRate}%`,
       label: 'QA Pass Rate',
       icon: TestTube2,
       tint: 'bg-warning/5',
       iconBg: 'bg-warning/10',
       iconColor: 'text-warning',
-    },
-    {
-      value: prodDeployments,
-      label: 'Prod Deployments',
-      icon: Rocket,
-      tint: 'bg-accent/5',
-      iconBg: 'bg-accent/10',
-      iconColor: 'text-accent',
     },
   ];
 

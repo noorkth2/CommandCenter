@@ -90,22 +90,44 @@ function generateFromData({ issues, qaItems, deployments, sprints, projects }) {
     return deadline < now;
   });
   for (const issue of overdue) {
-    const projectName = issue.projects?.name || '';
-    const suffix = projectName ? ` — ${projectName}` : '';
-    notifications.push({
-      id: `issue_overdue:${issue.id}`,
-      type: 'issue_overdue',
-      title: 'Overdue Issue',
-      message: `${issue.title}${suffix}`,
-      severity: 'warning',
-      read: false,
-      created_at: issue.updated_at || issue.created_at,
-      related_id: issue.id,
-      related_type: 'issue',
-    });
+  const projectName = issue.projects?.name || '';
+  const suffix = projectName ? ` — ${projectName}` : '';
+  notifications.push({
+    id: `issue_overdue:${issue.id}`,
+    type: 'issue_overdue',
+    title: 'Overdue Issue',
+    message: `${issue.title}${suffix}`,
+    severity: 'warning',
+    read: false,
+    created_at: issue.updated_at || issue.created_at,
+    related_id: issue.id,
+    related_type: 'issue',
+  });
+  }
+
+  // 5. SLA breaches — p0/p1 issues unresolved for more than 24h
+  const slaBreaches = (issues || []).filter((i) => {
+  if (i.status === 'done' || i.status === 'cancelled' || !i.created_at) return false;
+  if (i.priority !== 'p0' && i.priority !== 'p1') return false;
+  if (!['backlog', 'todo', 'in_progress'].includes(i.status)) return false;
+  return (now - new Date(i.created_at)) > 86400000;
+  });
+  for (const issue of slaBreaches) {
+  notifications.push({
+    id: `sla_breach:${issue.id}`,
+    type: 'sla_breach',
+    title: `SLA Breach: ${issue.priority.toUpperCase()}`,
+    message: `"${issue.title}" unresolved for > 24h`,
+    severity: issue.priority === 'p0' ? 'critical' : 'warning',
+    read: false,
+    created_at: issue.created_at,
+    related_id: issue.id,
+    related_type: 'issue',
+  });
   }
 
   // Sort: critical first, then warning, then info; within same severity by recency (newest first)
+
   const severityOrder = { critical: 0, warning: 1, info: 2 };
   notifications.sort((a, b) => {
     const sa = severityOrder[a.severity] ?? 2;

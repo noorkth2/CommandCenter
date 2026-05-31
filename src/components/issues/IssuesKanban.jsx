@@ -11,8 +11,11 @@
 
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useIssueStore } from '../../store/useIssueStore';
+import { useToast } from '../ui/Toast';
 import PriorityBadge from '../shared/PriorityBadge';
+import SeverityBadge from '../shared/SeverityBadge';
 import { PRIORITY_COLORS } from '../../lib/constants';
+import { ShieldAlert } from 'lucide-react';
 
 const COLUMNS = [
   { id: 'backlog',         label: 'Backlog',          color: 'bg-neutral-700' },
@@ -28,6 +31,7 @@ const COLUMNS = [
 
 export default function IssuesKanban({ issues = [], onCardClick }) {
   const { transitionStatus } = useIssueStore();
+  const toast = useToast();
 
   const byStatus = COLUMNS.reduce((acc, col) => {
     acc[col.id] = issues.filter((i) => i.status === col.id);
@@ -38,9 +42,20 @@ export default function IssuesKanban({ issues = [], onCardClick }) {
     if (!destination) return;
     if (source.droppableId === destination.droppableId) return;
 
+    // Epic 5: Definition of Done Check
+    if (destination.droppableId === 'done') {
+      const issue = issues.find(i => i.id === draggableId);
+      const dod = issue?.definition_of_done ?? [];
+      const incomplete = dod.filter(item => !item.checked);
+      
+      if (incomplete.length > 0) {
+        toast.error(`Cannot complete issue: ${incomplete.length} DoD items remaining.`);
+        return;
+      }
+    }
+
     const result = await transitionStatus(draggableId, destination.droppableId);
     if (result?.error) {
-      // Toast is wired in the store — just log here
       console.warn('[Kanban] Transition blocked:', result.error);
     }
   };
@@ -116,33 +131,43 @@ function IssueCard({ issue, index, onClick }) {
             ${snapshot.isDragging ? 'shadow-xl ring-1 ring-white/10 rotate-1' : ''}`}
         >
           {/* Title */}
-          <p className="text-xs text-white/80 leading-snug line-clamp-2 mb-2">
-            {issue.title}
-          </p>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <p className="text-xs text-white/80 font-medium leading-snug line-clamp-2">
+              {issue.title}
+            </p>
+            {issue.is_tech_debt && (
+              <ShieldAlert size={12} className="text-warning flex-shrink-0" title="Technical Debt" />
+            )}
+          </div>
 
           {/* Footer row */}
-          <div className="flex items-center justify-between gap-1">
-            <PriorityBadge priority={issue.priority} />
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1">
+                <PriorityBadge priority={issue.priority} />
+                <SeverityBadge severity={issue.severity} />
+              </div>
 
-            <div className="flex items-center gap-1">
-              {issue.labels?.slice(0, 2).map((label) => (
+              {issue.assignee && (
+                <span
+                  title={issue.assignee}
+                  className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
+                >
+                  {issue.assignee.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-1">
+              {issue.labels?.slice(0, 3).map((label) => (
                 <span
                   key={label}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40"
+                  className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 border border-white/5"
                 >
                   {label}
                 </span>
               ))}
             </div>
-
-            {issue.assignee && (
-              <span
-                title={issue.assignee}
-                className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
-              >
-                {issue.assignee.charAt(0).toUpperCase()}
-              </span>
-            )}
           </div>
         </div>
       )}

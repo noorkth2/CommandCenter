@@ -80,6 +80,13 @@ function generateLocalSummary(type, data) {
         confidence: 0.8,
         reasoning: 'Local triage rule fallback'
       })));
+    case 'triage_single':
+      return JSON.stringify({
+        suggested_priority: data.priority || 'p2',
+        suggested_team: data.team || 'engineering',
+        confidence: 0.8,
+        reasoning: 'Local triage rule fallback'
+      });
     default:
       return `**Report (Local)**\n\nReport type \`${type}\` is not supported locally.`;
   }
@@ -400,6 +407,27 @@ Example:
     "reasoning": "Critical payment bug affecting users"
   }
 ]
+`.trim(),
+
+  triage_single: (issue) => `
+You are an expert product manager. Triage the following bug report:
+Title: ${issue.title}
+Description: ${issue.description ?? 'No description provided'}
+
+Suggest:
+1. Suggested Priority (p0, p1, p2, p3)
+2. Suggested Team (backend, frontend, app)
+3. Confidence (0.0 to 1.0)
+4. Reasoning (max 15 words)
+
+Format your response as a JSON object ONLY. Do not write markdown fences or other text.
+Example:
+{
+  "suggested_priority": "p1",
+  "suggested_team": "backend",
+  "confidence": 0.9,
+  "reasoning": "Database connection error affecting all users"
+}
 `.trim(),
 };
 

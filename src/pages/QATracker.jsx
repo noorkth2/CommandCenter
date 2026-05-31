@@ -18,8 +18,8 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import StatusBadge from '../components/shared/StatusBadge';
 import Dropdown from '../components/ui/Dropdown';
 import {
-  QA_STATUSES, QA_SEVERITIES, QA_TEST_TYPES,
-  QA_STATUS_LABELS, QA_TEST_TYPE_LABELS,
+  QA_STATUSES, QA_SEVERITIES, QA_PRIORITIES, QA_TEST_TYPES,
+  QA_STATUS_LABELS, QA_TEST_TYPE_LABELS, PROJECT_PRIORITY_LABELS,
 } from '../lib/constants';
 
 const SEVERITY_COLORS = {
@@ -36,6 +36,7 @@ const schema = z.object({
   module: z.string().optional(),
   test_type: z.enum(QA_TEST_TYPES).optional().or(z.literal('')),
   severity: z.enum(QA_SEVERITIES),
+  priority: z.enum(['p0', 'p1', 'p2', 'p3']),
   status: z.enum(QA_STATUSES),
   steps_to_reproduce: z.string().optional(),
   expected_result: z.string().optional(),
@@ -80,7 +81,7 @@ export default function QATracker() {
 
   const openCreate = (prefill = {}) => {
     setEditing(null);
-    reset({ severity: 'medium', status: 'to_test', ...prefill });
+    reset({ severity: 'medium', priority: 'p2', status: 'to_test', ...prefill });
     setPanelOpen(true);
   };
 
@@ -93,6 +94,7 @@ export default function QATracker() {
       module: item.module ?? '',
       test_type: item.test_type ?? '',
       severity: item.severity,
+      priority: item.priority ?? 'p2',
       status: item.status,
       steps_to_reproduce: item.steps_to_reproduce ?? '',
       expected_result: item.expected_result ?? '',
@@ -363,7 +365,10 @@ export default function QATracker() {
             <Select label="Test Type" placeholder="Select type" options={toOptions(QA_TEST_TYPES, QA_TEST_TYPE_LABELS)} {...register('test_type')} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Select label="Severity" options={[{ value: 'critical', label: 'Critical' }, { value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }]} {...register('severity')} />
+            <div className="grid grid-cols-2 gap-2">
+              <Select label="Severity" options={[{ value: 'critical', label: 'Critical' }, { value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }]} {...register('severity')} />
+              <Select label="Priority" options={toOptions(QA_PRIORITIES, PROJECT_PRIORITY_LABELS)} {...register('priority')} />
+            </div>
             <Select label="Status" options={toOptions(QA_STATUSES, QA_STATUS_LABELS)} {...register('status')} />
           </div>
           <div className="grid grid-cols-2 gap-4">
