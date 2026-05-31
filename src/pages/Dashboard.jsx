@@ -4,6 +4,7 @@ import {
   FolderKanban,
   AlertCircle,
   TestTube2,
+  Clock,
   Rocket,
   ArrowUpRight,
   Zap,

@@ -334,9 +334,11 @@ export default function Sprints() {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Sprint Issues List */}
+              {/* Sprint Issues List */}
                 <div className="card p-5 space-y-4">
+
                   <h4 className="font-semibold text-text-primary text-sm">Sprint Issues</h4>
 
                   {activeSprintIssues.length === 0 ? (

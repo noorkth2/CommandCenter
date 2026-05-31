@@ -1,6 +1,6 @@
 {
   "name": "commandcenter",
-  "version": "1.0.6",
+  "version": "2.0.0",
   "description": "PM Command Center — unified productivity tool for teams",
   "main": "electron/main.js",
   "homepage": "./",
@@ -40,7 +40,7 @@
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.2",
-    "electron": "^35.3.0",
+    "electron": "^35.7.5",
     "electron-builder": "^25.1.8",
     "jsdom": "^29.1.1",
     "postcss": "^8.5.3",
