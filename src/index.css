@@ -410,6 +410,20 @@
   .glow-accent {
     box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.15);
   }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(var(--border-rgb), 1);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--accent-rgb), 0.5);
+  }
 }
 
 @keyframes fadeIn {
@@ -470,11 +484,15 @@
 /* Force hide the floating bubble while keeping identity logic */
 #chatbase-bubble-button,
 #chatbase-bubble-window,
-iframe[src*="chatbase.co/chatbot-iframe"] {
+iframe.chatbase-bubble {
   display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
-/* BUT ensure the one inside our AI Assistant panel stays visible */
-.animate-slide-in-right iframe[src*="chatbase.co/chatbot-iframe"] {
+/* Ensure the one inside our AI Assistant panel stays visible */
+.animate-slide-in-right iframe {
   display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }

@@ -53,79 +53,82 @@ User Message: ${userMessage}
   if (!open) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-[450px] bg-bg-surface border-l border-border shadow-2xl z-[100] flex flex-col animate-slide-in-right">
+    <div className="fixed inset-y-0 right-0 w-[450px] bg-bg-surface border-l border-border shadow-2xl z-[100] flex flex-col animate-slide-in-right overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-border space-y-4 bg-bg-elevated/50">
+      <div className="p-5 border-b border-border space-y-5 bg-bg-elevated/30 backdrop-blur-md">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent">
-              <Sparkles size={18} />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent shadow-sm">
+              <Sparkles size={20} />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wider">AI Assistant</h3>
-              <p className="text-[10px] text-text-muted">Direct Workspace Intelligence</p>
+              <h3 className="text-sm font-bold text-text-primary uppercase tracking-[0.1em]">AI Assistant</h3>
+              <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Direct Workspace Intelligence</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md text-text-muted hover:text-danger hover:bg-danger/5 transition-colors"
+            className="p-2 rounded-lg text-text-muted hover:text-danger hover:bg-danger/5 transition-all active:scale-95"
           >
-            <X size={18} />
+            <X size={20} />
           </button>
         </div>
 
-        {/* Agent Switcher Flag */}
-        <div className="flex p-1 rounded-lg bg-bg-base border border-border">
+        {/* Agent Switcher */}
+        <div className="flex p-1 rounded-xl bg-bg-base/50 border border-border/60 shadow-inner">
           <button
             onClick={() => setActiveAgent('chatbase')}
-            className={`flex-1 py-1.5 rounded-md text-2xs font-bold transition-all ${
+            className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
               activeAgent === 'chatbase'
-                ? 'bg-accent text-white shadow-sm'
+                ? 'bg-accent text-white shadow-md'
                 : 'text-text-muted hover:text-text-primary'
             }`}
           >
-            Chatbase (Default)
+            Global Chat
           </button>
           <button
             onClick={() => setActiveAgent('custom')}
-            className={`flex-1 py-1.5 rounded-md text-2xs font-bold transition-all ${
+            className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
               activeAgent === 'custom'
-                ? 'bg-accent text-white shadow-sm'
+                ? 'bg-accent text-white shadow-md'
                 : 'text-text-muted hover:text-text-primary'
             }`}
           >
-            Custom AI (Zen/Gemini)
+            Custom Agent
           </button>
         </div>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-hidden relative bg-bg-base/20">
         {activeAgent === 'chatbase' ? (
-          <iframe
-            src={`https://www.chatbase.co/chatbot-iframe/${CHATBOT_ID}`}
-            width="100%"
-            height="100%"
-            frameBorder="0"
-            className="w-full h-full"
-            title="Chatbase Assistant"
-          />
+          <div className="w-full h-full relative">
+            <iframe
+              src={`https://www.chatbase.co/chatbot-iframe/${CHATBOT_ID}`}
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              className="w-full h-full block"
+              title="Chatbase Assistant"
+              style={{ display: 'block' }}
+            />
+          </div>
         ) : (
           <div className="flex flex-col h-full">
             {/* Custom Messages */}
             <div 
               ref={scrollRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar"
+              className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar"
             >
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex gap-3 ${msg.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'}`}>
-                  <div className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center ${
+                  <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center shadow-sm ${
                     msg.role === 'assistant' ? 'bg-accent/10 text-accent' : 'bg-bg-elevated border border-border text-text-muted'
                   }`}>
-                    {msg.role === 'assistant' ? <Bot size={14} /> : <User size={14} />}
+                    {msg.role === 'assistant' ? <Bot size={16} /> : <User size={16} />}
                   </div>
-                  <div className={`max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed ${
-                    msg.role === 'assistant' ? 'bg-bg-elevated text-text-primary rounded-tl-none' : 'bg-accent text-white rounded-tr-none'
+                  <div className={`max-w-[85%] p-4 rounded-2xl text-xs leading-relaxed shadow-sm ${
+                    msg.role === 'assistant' ? 'bg-bg-surface text-text-primary rounded-tl-none border border-border/40' : 'bg-accent text-white rounded-tr-none'
                   }`}>
                     {msg.content}
                   </div>
@@ -133,27 +136,33 @@ User Message: ${userMessage}
               ))}
               {generating && (
                 <div className="flex gap-3 animate-pulse">
-                  <div className="w-7 h-7 rounded-full bg-accent/10 flex items-center justify-center text-accent"><Bot size={14} /></div>
-                  <div className="bg-bg-elevated p-3 rounded-2xl rounded-tl-none flex items-center gap-2">
-                    <Loader2 size={12} className="animate-spin text-accent" />
-                    <span className="text-[10px] text-text-muted">Thinking...</span>
+                  <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent shadow-sm"><Bot size={16} /></div>
+                  <div className="bg-bg-surface p-4 rounded-2xl rounded-tl-none flex items-center gap-3 border border-border/40 shadow-sm">
+                    <Loader2 size={14} className="animate-spin text-accent" />
+                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Thinking...</span>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Custom Input */}
-            <div className="p-4 border-t border-border bg-bg-elevated/20">
+            <div className="p-5 border-t border-border bg-bg-surface/80 backdrop-blur-md">
               <form onSubmit={handleSend} className="relative flex items-center">
                 <input
                   type="text"
-                  placeholder="Ask the custom assistant..."
-                  className="w-full bg-bg-surface border border-border focus:border-accent rounded-full py-2.5 pl-4 pr-12 text-xs text-text-primary"
+                  placeholder="Ask the workspace assistant..."
+                  className="w-full bg-bg-elevated border border-border focus:border-accent rounded-xl py-3 pl-5 pr-12 text-xs text-text-primary transition-all shadow-inner"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   disabled={generating}
                 />
-                <button type="submit" className="absolute right-1.5 p-1.5 rounded-full bg-accent text-white"><Send size={14} /></button>
+                <button 
+                  type="submit" 
+                  disabled={!input.trim() || generating}
+                  className="absolute right-2 p-2 rounded-lg bg-accent text-white shadow-md hover:bg-accent-hover transition-all active:scale-90 disabled:opacity-50"
+                >
+                  <Send size={16} />
+                </button>
               </form>
             </div>
           </div>
