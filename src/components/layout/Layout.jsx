@@ -83,7 +83,7 @@ export default function Layout() {
         onOpenConflicts={handleOpenConflict}
       />
       <main className="main-content" id="main-content">
-        <div className="p-7 max-w-[1200px] mx-auto">
+        <div className="p-8 max-w-[1400px] mx-auto">
           <Outlet />
         </div>
       </main>

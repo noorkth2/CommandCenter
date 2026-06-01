@@ -245,37 +245,47 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="animate-fade-in space-y-4 pb-12">
+    <div className="animate-fade-in space-y-6 pb-12">
       {/* ─── Hero Banner ─── */}
-      <div className="relative overflow-hidden rounded-lg h-[160px] bg-gradient-to-br from-bg-elevated via-bg-surface to-accent/5 border border-border">
-        <div className="relative z-10 h-full flex items-center justify-between px-8">
-          <div className="space-y-2.5">
-            <h2 className="text-2xl font-semibold text-text-primary leading-tight">
-              CommandCenter &mdash; Your PM Hub
-            </h2>
-            <p className="text-sm text-text-secondary max-w-md leading-relaxed">
-              Centralized product &amp; project management with real-time insights,
-              AI-powered reports, and seamless team collaboration.
-            </p>
+      <div className="relative overflow-hidden rounded-xl h-[180px] glass glow-accent border-border/60">
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-transparent opacity-50" />
+        <div className="relative z-10 h-full flex items-center justify-between px-10">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent uppercase tracking-widest animate-pulse">
+              <Sparkles size={12} />
+              Platform v2.1 Pro Max
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-3xl font-bold text-text-primary leading-tight tracking-tight">
+                CommandCenter
+              </h2>
+              <p className="text-sm text-text-secondary max-w-md leading-relaxed font-medium">
+                Your high-performance workspace for project intelligence, 
+                delivery automation, and strategic team alignment.
+              </p>
+            </div>
             <button
               onClick={() => navigate('/board')}
-              className="inline-flex items-center gap-1.5 h-9 px-5 rounded-full text-sm font-medium text-text-primary border border-border hover:bg-bg-elevated hover:border-border-hover transition-colors cursor-pointer"
+              className="btn-primary btn-md rounded-full shadow-lg shadow-accent/20"
             >
-              View Board <ArrowUpRight size={14} />
+              Enter Sprint Board <ArrowUpRight size={16} />
             </button>
           </div>
-          <div className="hidden lg:flex items-center gap-3 opacity-40">
-            <div className="w-12 h-12 rounded-full bg-bg-elevated border border-border flex items-center justify-center">
-              <Package size={20} className="text-text-muted" />
-            </div>
-            <div className="w-10 h-10 rounded-full bg-bg-elevated border border-border flex items-center justify-center -ml-3 mt-6">
-              <Users size={18} className="text-text-muted" />
-            </div>
-            <div className="w-11 h-11 rounded-full bg-bg-elevated border border-border flex items-center justify-center -ml-3 -mt-4">
-              <CircleDot size={18} className="text-text-muted" />
-            </div>
-            <div className="w-9 h-9 rounded-full bg-bg-elevated border border-border flex items-center justify-center -ml-3 mt-8">
-              <Zap size={16} className="text-text-muted" />
+          
+          <div className="hidden lg:flex items-center gap-6 select-none">
+            <div className="grid grid-cols-2 gap-3 opacity-20 transform rotate-12 scale-110">
+              <div className="w-16 h-16 rounded-2xl bg-accent/20 border-2 border-accent/30 flex items-center justify-center">
+                <Package size={28} className="text-accent" />
+              </div>
+              <div className="w-16 h-16 rounded-2xl bg-text-primary/10 border-2 border-text-primary/20 flex items-center justify-center mt-6">
+                <Users size={28} className="text-text-primary" />
+              </div>
+              <div className="w-16 h-16 rounded-2xl bg-text-primary/10 border-2 border-text-primary/20 flex items-center justify-center -mt-6">
+                <CircleDot size={28} className="text-text-primary" />
+              </div>
+              <div className="w-16 h-16 rounded-2xl bg-success/20 border-2 border-success/30 flex items-center justify-center">
+                <Zap size={28} className="text-success" />
+              </div>
             </div>
           </div>
         </div>
@@ -288,18 +298,16 @@ export default function Dashboard() {
           return (
             <div
               key={i}
-              className="card p-5 space-y-3 relative overflow-hidden"
+              className="card-interactive p-6 space-y-4 relative overflow-hidden group"
             >
-              {card.tint && (
-                <div className={`absolute inset-0 ${card.tint} pointer-events-none`} />
-              )}
-              <div className="relative z-10 space-y-3">
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${card.iconBg}`}>
-                  <Icon size={18} className={card.iconColor} />
+              <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500 ${card.iconColor.replace('text-', 'bg-')}`} />
+              <div className="relative z-10 space-y-4">
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm ${card.iconBg}`}>
+                  <Icon size={20} className={card.iconColor} />
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-text-primary tracking-tight">{card.value}</p>
-                  <p className="text-sm text-text-muted mt-0.5">{card.label}</p>
+                  <p className="text-3xl font-bold text-text-primary tracking-tighter leading-none">{card.value}</p>
+                  <p className="text-xs font-bold text-text-muted mt-2 uppercase tracking-widest">{card.label}</p>
                 </div>
               </div>
             </div>
@@ -307,55 +315,74 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* ─── Middle Row: Active Sprint + Issue Distribution ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Active Sprint */}
-        <div className="card p-5 space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Zap size={16} className="text-accent" />
-                <span className="text-sm font-semibold text-text-primary">Active Sprint</span>
+      {/* ─── Bento Grid Layout ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Active Sprint - Bento Large */}
+        <div className="lg:col-span-7 card p-6 space-y-6 flex flex-col justify-between group hover:border-accent/30 transition-all duration-300">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Zap size={16} className="text-accent" />
+                </div>
+                <span className="text-sm font-bold text-text-primary uppercase tracking-widest">Active Sprint</span>
               </div>
               {activeSprint && (
-                <span className="text-xs font-medium text-success bg-success/15 px-2.5 py-0.5 rounded-full">
-                  In Progress
-                </span>
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 border border-success/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                  <span className="text-[10px] font-bold text-success uppercase tracking-wider">
+                    {SPRINT_STATUS_LABELS[activeSprint.status]}
+                  </span>
+                </div>
               )}
             </div>
 
             {activeSprint ? (
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-text-primary text-sm">{activeSprint.name}</h4>
-                  {activeSprint.goals && (
-                    <p className="text-sm text-text-secondary mt-1.5 line-clamp-2 leading-relaxed">
-                      {activeSprint.goals}
-                    </p>
-                  )}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+                <div className="md:col-span-3 space-y-4">
+                  <div>
+                    <h4 className="font-bold text-text-primary text-lg tracking-tight">{activeSprint.name}</h4>
+                    {activeSprint.goals && (
+                      <p className="text-sm text-text-secondary mt-2 line-clamp-3 leading-relaxed font-medium">
+                        {activeSprint.goals}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 text-xs font-bold text-text-muted uppercase tracking-widest">
+                    <span className="flex items-center gap-1.5"><Clock size={12} /> {new Date(activeSprint.start_date).toLocaleDateString()}</span>
+                    <span>&mdash;</span>
+                    <span className="flex items-center gap-1.5">Ends {activeSprint.end_date ? new Date(activeSprint.end_date).toLocaleDateString() : 'TBD'}</span>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-text-secondary">
-                    <span>Progress</span>
-                    <span>{sprintProgress}%</span>
+                <div className="md:col-span-2 space-y-5 flex flex-col justify-center border-l border-border/40 pl-8">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-end">
+                      <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Sprint Progress</span>
+                      <span className="text-lg font-bold text-text-primary">{sprintProgress}%</span>
+                    </div>
+                    <div className="progress-bar-track h-2">
+                      <div
+                        className="progress-bar-fill shadow-[0_0_10px_rgba(var(--accent-rgb),0.3)]"
+                        style={{ width: `${sprintProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                      {completedSprintIssues.length} / {activeSprintIssues.length} Tasks Finalized
+                    </p>
                   </div>
-                  <div className="progress-bar-track">
-                    <div
-                      className="progress-bar-fill"
-                      style={{ width: `${sprintProgress}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-text-muted">
-                    {completedSprintIssues.length} of {activeSprintIssues.length} issues completed
-                  </span>
                 </div>
               </div>
             ) : (
-              <div className="py-12 text-center text-text-muted space-y-3">
-                <AlertCircle size={28} className="mx-auto text-text-muted opacity-40" />
-                <p className="text-sm">No active sprint running</p>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/sprints')}>
+              <div className="py-12 text-center text-text-muted space-y-4">
+                <div className="w-16 h-16 rounded-full bg-bg-elevated border border-border flex items-center justify-center mx-auto opacity-40">
+                  <AlertCircle size={28} />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-text-secondary">No active sprint running</p>
+                  <p className="text-xs text-text-muted">Initiate a new sprint to begin tracking velocity.</p>
+                </div>
+                <Button variant="secondary" size="sm" className="rounded-full px-6" onClick={() => navigate('/sprints')}>
                   Go to Sprint Planner
                 </Button>
               </div>
@@ -363,117 +390,192 @@ export default function Dashboard() {
           </div>
 
           {activeSprint && (
-            <button
-              onClick={() => navigate('/sprints')}
-              className="w-full h-10 rounded-lg text-sm font-medium text-text-primary bg-bg-elevated border border-border hover:bg-bg-surface hover:border-border-hover transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              Sprint Board <ArrowUpRight size={14} />
-            </button>
+            <div className="pt-2">
+              <button
+                onClick={() => navigate('/board')}
+                className="btn-secondary w-full h-11 rounded-xl shadow-sm group-hover:bg-bg-elevated/80"
+              >
+                Sprint Kanban Board <ArrowUpRight size={16} className="text-text-muted group-hover:text-accent group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+              </button>
+            </div>
           )}
         </div>
 
-        {/* Issue Distribution */}
-        <div className="card p-5 space-y-3 flex flex-col">
-          <span className="text-sm font-semibold text-text-primary">Issue Distribution by Status</span>
-          <div className="flex-1 w-full min-h-0">
+        {/* Issue Distribution - Bento Small */}
+        <div className="lg:col-span-5 card p-6 space-y-4 flex flex-col hover:border-accent/20 transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold text-text-primary uppercase tracking-widest">Status Distribution</span>
+            <div className="p-1.5 rounded-lg bg-bg-elevated/40 border border-border/40">
+              <TrendingUp size={14} className="text-text-muted" />
+            </div>
+          </div>
+          <div className="flex-1 w-full min-h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={statusChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <XAxis dataKey="name" stroke="#555555" fontSize={11} tickLine={false} />
-                <YAxis stroke="#555555" fontSize={11} tickLine={false} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(var(--border-rgb), 0.3)" />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="rgba(var(--text-muted-rgb), 0.5)" 
+                  fontSize={10} 
+                  fontWeight={600}
+                  tickLine={false} 
+                  axisLine={false}
+                  tick={{ dy: 10 }}
+                />
+                <YAxis 
+                  stroke="rgba(var(--text-muted-rgb), 0.5)" 
+                  fontSize={10} 
+                  fontWeight={600}
+                  tickLine={false} 
+                  axisLine={false}
+                  allowDecimals={false} 
+                />
                 <Tooltip
-                  cursor={{ fill: 'rgba(var(--text-primary-rgb), 0.03)' }}
+                  cursor={{ fill: 'rgba(var(--accent-rgb), 0.05)', radius: 4 }}
                   contentStyle={{
-                    background: 'rgba(var(--bg-elevated-rgb), 1)',
+                    background: 'rgba(var(--bg-elevated-rgb), 0.9)',
+                    backdropFilter: 'blur(8px)',
                     border: '1px solid rgba(var(--border-rgb), 1)',
-                    borderRadius: '8px',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                    padding: '12px',
                     fontSize: '12px',
-                    color: 'rgba(var(--text-primary-rgb), 1)',
+                    fontWeight: '600',
                   }}
                 />
-                <Bar dataKey="count" fill="#7c6ef5" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                <Bar 
+                  dataKey="count" 
+                  fill="url(#colorAccent)" 
+                  radius={[6, 6, 0, 0]} 
+                  maxBarSize={32} 
+                />
+                <defs>
+                  <linearGradient id="colorAccent" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(var(--accent-rgb), 1)" />
+                    <stop offset="100%" stopColor="rgba(var(--accent-rgb), 0.6)" />
+                  </linearGradient>
+                </defs>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
 
-      {/* ─── Bottom Row: Velocity + Burndown ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Velocity */}
-        <div className="card p-5 space-y-3 flex flex-col">
-          <div className="flex items-center gap-2">
-            <TrendingUp size={16} className="text-accent" />
-            <span className="text-sm font-semibold text-text-primary">Sprint Velocity</span>
+        {/* Velocity Chart - Bento Small */}
+        <div className="lg:col-span-5 card p-6 space-y-4 flex flex-col hover:border-accent/20 transition-all duration-300">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+              <TrendingUp size={16} className="text-accent" />
+            </div>
+            <span className="text-sm font-bold text-text-primary uppercase tracking-widest">Sprint Velocity</span>
           </div>
-          <div className="flex-1 w-full min-h-0">
+          <div className="flex-1 w-full min-h-[220px]">
             {velocityChartData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-text-muted text-sm">
-                Complete a sprint to see velocity data
+              <div className="h-full flex items-center justify-center text-text-muted text-xs font-medium bg-bg-elevated/20 rounded-xl border border-dashed border-border/60">
+                Awaiting historical sprint data...
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={velocityChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                  <XAxis dataKey="name" stroke="#555555" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#555555" fontSize={11} tickLine={false} allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(var(--border-rgb), 0.3)" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="rgba(var(--text-muted-rgb), 0.5)" 
+                    fontSize={10} 
+                    fontWeight={600}
+                    tickLine={false} 
+                    axisLine={false}
+                    tick={{ dy: 10 }}
+                  />
+                  <YAxis 
+                    stroke="rgba(var(--text-muted-rgb), 0.5)" 
+                    fontSize={10} 
+                    fontWeight={600}
+                    tickLine={false} 
+                    axisLine={false}
+                    allowDecimals={false} 
+                  />
                   <Tooltip
-                    cursor={{ fill: 'rgba(var(--text-primary-rgb), 0.03)' }}
+                    cursor={{ fill: 'rgba(var(--accent-rgb), 0.05)', radius: 4 }}
                     contentStyle={{
-                      background: 'rgba(var(--bg-elevated-rgb), 1)',
+                      background: 'rgba(var(--bg-elevated-rgb), 0.9)',
+                      backdropFilter: 'blur(8px)',
                       border: '1px solid rgba(var(--border-rgb), 1)',
-                      borderRadius: '8px',
+                      borderRadius: '12px',
+                      padding: '12px',
                       fontSize: '12px',
-                      color: 'rgba(var(--text-primary-rgb), 1)',
+                      fontWeight: '600',
                     }}
                   />
-                  <Bar dataKey="velocity" fill="#7c6ef5" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  <Bar dataKey="velocity" fill="#7c6ef5" radius={[6, 6, 0, 0]} maxBarSize={32} />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
         </div>
 
-        {/* Burndown */}
-        <div className="card p-5 space-y-3 flex flex-col">
-          <div className="flex items-center gap-2">
-            <LineChartIcon size={16} className="text-accent" />
-            <span className="text-sm font-semibold text-text-primary">Sprint Burndown</span>
+        {/* Burndown Chart - Bento Large */}
+        <div className="lg:col-span-7 card p-6 space-y-4 flex flex-col hover:border-accent/20 transition-all duration-300">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+              <LineChartIcon size={16} className="text-accent" />
+            </div>
+            <span className="text-sm font-bold text-text-primary uppercase tracking-widest">Sprint Burndown</span>
           </div>
-          <div className="flex-1 w-full min-h-0">
+          <div className="flex-1 w-full min-h-[220px]">
             {burndownChartData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-text-muted text-sm">
-                {activeSprint ? 'No issues in active sprint' : 'No active sprint running'}
+              <div className="h-full flex items-center justify-center text-text-muted text-xs font-medium bg-bg-elevated/20 rounded-xl border border-dashed border-border/60">
+                {activeSprint ? 'Tracking active sprint issues...' : 'No active burn data available.'}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={burndownChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(var(--border-rgb), 0.5)" />
-                  <XAxis dataKey="day" stroke="#555555" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#555555" fontSize={11} tickLine={false} allowDecimals={false} domain={[0, 'auto']} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(var(--border-rgb), 0.3)" />
+                  <XAxis 
+                    dataKey="day" 
+                    stroke="rgba(var(--text-muted-rgb), 0.5)" 
+                    fontSize={10} 
+                    fontWeight={600}
+                    tickLine={false} 
+                    axisLine={false}
+                    tick={{ dy: 10 }}
+                  />
+                  <YAxis 
+                    stroke="rgba(var(--text-muted-rgb), 0.5)" 
+                    fontSize={10} 
+                    fontWeight={600}
+                    tickLine={false} 
+                    axisLine={false}
+                    allowDecimals={false} 
+                    domain={[0, 'auto']} 
+                  />
                   <Tooltip
                     contentStyle={{
-                      background: 'rgba(var(--bg-elevated-rgb), 1)',
+                      background: 'rgba(var(--bg-elevated-rgb), 0.9)',
+                      backdropFilter: 'blur(8px)',
                       border: '1px solid rgba(var(--border-rgb), 1)',
-                      borderRadius: '8px',
+                      borderRadius: '12px',
+                      padding: '12px',
                       fontSize: '12px',
-                      color: 'rgba(var(--text-primary-rgb), 1)',
+                      fontWeight: '600',
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="ideal"
-                    stroke="#555555"
-                    strokeWidth={1.5}
-                    strokeDasharray="6 4"
+                    stroke="rgba(var(--text-muted-rgb), 0.4)"
+                    strokeWidth={2}
+                    strokeDasharray="8 6"
                     dot={false}
-                    name="Ideal"
+                    name="Ideal Trend"
                   />
                   <Line
                     type="monotone"
                     dataKey="remaining"
                     stroke="#7c6ef5"
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: '#7c6ef5' }}
-                    name="Actual"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#7c6ef5', strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                    name="Actual Burn"
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -484,34 +586,36 @@ export default function Dashboard() {
 
       {/* ─── Project Time Budgets Row ─── */}
       {projectBudgets.length > 0 && (
-        <div className="card p-5 space-y-4">
-          <div className="flex items-center gap-2 border-b border-border pb-3">
-            <FolderKanban size={16} className="text-accent" />
-            <h3 className="text-sm font-semibold text-text-primary">Project Time Budgets</h3>
+        <div className="card p-6 space-y-6">
+          <div className="flex items-center gap-3 border-b border-border/60 pb-5">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+              <FolderKanban size={16} className="text-accent" />
+            </div>
+            <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest">Project Time Budgets</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {projectBudgets.map((pb) => (
-              <div key={pb.id} className="p-4 rounded-lg bg-bg-elevated border border-border space-y-3">
+              <div key={pb.id} className="p-5 rounded-xl bg-bg-elevated/30 border border-border/60 space-y-4 hover:bg-bg-elevated/50 transition-colors group">
                 <div className="flex justify-between items-start">
-                  <span className="text-xs font-semibold text-text-primary truncate max-w-[70%]">{pb.name}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                    pb.percent >= 90 ? 'bg-danger/10 text-danger' : pb.percent >= 75 ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
+                  <span className="text-xs font-bold text-text-primary truncate max-w-[70%] tracking-tight group-hover:text-accent transition-colors">{pb.name}</span>
+                  <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm ${
+                    pb.percent >= 90 ? 'bg-danger/10 text-danger border border-danger/20' : pb.percent >= 75 ? 'bg-warning/10 text-warning border border-warning/20' : 'bg-success/10 text-success border border-success/20'
                   }`}>
-                    {pb.percent}% used
-                  </span>
+                    {pb.percent}%
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <div className="h-1.5 w-full bg-bg-surface border border-border rounded-full overflow-hidden">
+                <div className="space-y-2.5">
+                  <div className="h-2 w-full bg-bg-surface border border-border/40 rounded-full overflow-hidden shadow-inner">
                     <div
-                      className={`h-full transition-all duration-300 ${
+                      className={`h-full transition-all duration-700 ease-out shadow-sm ${
                         pb.percent >= 90 ? 'bg-danger' : pb.percent >= 75 ? 'bg-warning' : 'bg-success'
                       }`}
                       style={{ width: `${pb.percent}%` }}
                     />
                   </div>
-                  <div className="flex justify-between text-3xs text-text-muted font-mono">
-                    <span>{pb.consumed} hrs logged</span>
-                    <span>{pb.remaining} hrs left / {pb.budget} hrs budget</span>
+                  <div className="flex justify-between text-[10px] text-text-muted font-bold uppercase tracking-widest">
+                    <span>{pb.consumed}h <span className="opacity-50">logged</span></span>
+                    <span>{pb.remaining}h <span className="opacity-50">left</span></span>
                   </div>
                 </div>
               </div>

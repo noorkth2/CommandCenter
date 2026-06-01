@@ -101,37 +101,37 @@ export default function Sidebar() {
     <aside className="sidebar">
       {/* Logo / Brand — compact */}
       {window.electron?.platform === 'darwin' ? (
-        <div className="flex flex-col items-center gap-1.5 py-4 px-4 flex-shrink-0 drag-region select-none" style={{ paddingLeft: '76px', paddingRight: '16px' }}>
-          <Logo className="w-6 h-6 flex-shrink-0" />
+        <div className="flex flex-col items-center gap-2 py-6 px-4 flex-shrink-0 drag-region select-none" style={{ paddingLeft: '80px', paddingRight: '16px' }}>
+          <Logo className="w-7 h-7 flex-shrink-0" />
           <div className="text-center">
-            <span className="text-xs font-semibold text-text-primary tracking-tight leading-none block whitespace-nowrap">
+            <span className="text-xs font-bold text-text-primary tracking-tight leading-none block whitespace-nowrap">
               CommandCenter
             </span>
-            <p className="text-3xs text-text-muted leading-none mt-0.5">PM Hub</p>
+            <p className="text-[10px] text-text-muted font-medium leading-none mt-1 uppercase tracking-tighter">PM Hub</p>
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2 py-3 px-4 flex-shrink-0 drag-region select-none">
-          <Logo className="w-6 h-6 flex-shrink-0" />
+        <div className="flex items-center gap-3 py-6 px-5 flex-shrink-0 drag-region select-none">
+          <Logo className="w-7 h-7 flex-shrink-0" />
           <div className="min-w-0">
-            <span className="text-xs font-semibold text-text-primary tracking-tight leading-none block whitespace-nowrap">
+            <span className="text-xs font-bold text-text-primary tracking-tight leading-none block whitespace-nowrap">
               CommandCenter
             </span>
-            <p className="text-3xs text-text-muted leading-none mt-0.5">PM Hub</p>
+            <p className="text-[10px] text-text-muted font-medium leading-none mt-1 uppercase tracking-tighter">PM Hub</p>
           </div>
         </div>
       )}
  
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
+      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-6">
         {NAV_SECTIONS.map((section) => {
           if (section.label === 'SETTINGS' && !isAdmin) return null;
           return (
             <div key={section.label}>
-              <p className="text-2xs font-medium text-text-muted uppercase tracking-widest px-3 pb-1.5 select-none">
+              <p className="text-[10px] font-bold text-text-muted/60 uppercase tracking-[0.15em] px-3 pb-2.5 select-none">
                 {section.label}
               </p>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {section.items.map(({ path, label, icon: Icon }) => (
                   <NavLink
                     key={path}
@@ -140,7 +140,7 @@ export default function Sidebar() {
                       `nav-item ${isActive ? 'active' : ''}`
                     }
                   >
-                    <Icon size={16} className="flex-shrink-0" />
+                    <Icon size={18} className="flex-shrink-0" />
                     <span className="truncate">{label}</span>
                   </NavLink>
                 ))}
@@ -151,15 +151,15 @@ export default function Sidebar() {
       </nav>
 
       {/* Bottom section */}
-      <div className="px-2 pb-3 pt-2 flex-shrink-0 space-y-2 border-t border-border">
+      <div className="px-3 pb-4 pt-3 flex-shrink-0 space-y-3 border-t border-border">
         {/* Theme Switcher Segmented Control */}
-        <div className="grid grid-cols-2 p-1 rounded-lg bg-bg-elevated/50 border border-border/60 gap-1 mx-1">
+        <div className="grid grid-cols-2 p-1 rounded-xl bg-bg-elevated/40 border border-border/40 gap-1 mx-1 shadow-inner">
           <button
             onClick={() => setTheme(false)}
-            className={`flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-medium transition-all duration-200 cursor-pointer ${
+            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all duration-300 cursor-pointer ${
               !darkMode
-                ? 'bg-bg-surface text-text-primary shadow-sm border border-border/20'
-                : 'text-text-muted hover:text-text-secondary'
+                ? 'bg-bg-surface text-text-primary shadow-sm ring-1 ring-border/20'
+                : 'text-text-muted hover:text-text-secondary hover:bg-bg-elevated/30'
             }`}
           >
             <Sun size={14} className="flex-shrink-0" />
@@ -167,10 +167,10 @@ export default function Sidebar() {
           </button>
           <button
             onClick={() => setTheme(true)}
-            className={`flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-medium transition-all duration-200 cursor-pointer ${
+            className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all duration-300 cursor-pointer ${
               darkMode
-                ? 'bg-bg-surface text-text-primary shadow-sm border border-border/20'
-                : 'text-text-muted hover:text-text-secondary'
+                ? 'bg-bg-surface text-text-primary shadow-sm ring-1 ring-border/20'
+                : 'text-text-muted hover:text-text-secondary hover:bg-bg-elevated/30'
             }`}
           >
             <Moon size={14} className="flex-shrink-0" />
@@ -180,24 +180,24 @@ export default function Sidebar() {
 
         {/* User profile */}
         {user && (
-          <div className="px-3 py-2.5 rounded-lg bg-bg-elevated/30 flex items-center gap-2.5 min-w-0">
+          <div className="px-3 py-3 rounded-xl bg-bg-elevated/20 border border-border/10 flex items-center gap-3 min-w-0 transition-all hover:bg-bg-elevated/40">
             {user.user_metadata?.avatar_url ? (
               <img
                 src={user.user_metadata.avatar_url}
                 alt={user.user_metadata.full_name || 'User'}
-                className="w-7 h-7 rounded-full border border-border flex-shrink-0"
+                className="w-8 h-8 rounded-lg border border-border/40 flex-shrink-0 object-cover"
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="w-7 h-7 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center text-xs font-semibold text-accent flex-shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-xs font-bold text-accent flex-shrink-0">
                 {user.email?.[0]?.toUpperCase() || 'U'}
               </div>
             )}
             <div className="min-w-0 leading-tight flex-1">
-              <p className="text-xs font-medium text-text-primary truncate">
+              <p className="text-xs font-semibold text-text-primary truncate">
                 {user.user_metadata?.full_name || 'Authorized User'}
               </p>
-              <p className="text-2xs text-text-muted truncate mt-px">
+              <p className="text-[10px] text-text-muted font-medium truncate mt-0.5">
                 {user.email}
               </p>
             </div>
@@ -208,9 +208,9 @@ export default function Sidebar() {
         {user && (
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 rounded-lg w-full h-8 text-xs text-text-muted hover:text-danger hover:bg-danger/5 transition-colors duration-150"
+            className="flex items-center gap-3 px-4 rounded-xl w-full h-10 text-xs font-medium text-text-muted hover:text-danger hover:bg-danger/5 transition-all duration-200"
           >
-            <LogOut size={14} />
+            <LogOut size={16} />
             <span>Sign Out</span>
           </button>
         )}

@@ -59,30 +59,32 @@ export default function TopBar({ onOpenPalette, onOpenConflicts }) {
       </div>
 
       {/* Right-side actions */}
-      <div className="flex items-center gap-2 flex-shrink-0 no-drag">
+      <div className="flex items-center gap-3 flex-shrink-0 no-drag">
         {/* Search bar */}
         <button
           onClick={onOpenPalette}
-          className="flex items-center gap-2 h-8 px-3 w-[240px]
-                     bg-bg-surface border border-border rounded text-xs text-text-muted
-                     cursor-pointer hover:border-border-hover transition-colors"
+          className="flex items-center gap-2.5 h-10 px-4 w-[280px]
+                     bg-bg-elevated/40 border border-border/60 rounded-xl text-xs text-text-muted
+                     cursor-pointer hover:border-accent/40 hover:bg-bg-elevated/60 transition-all duration-200 group shadow-inner"
         >
-          <Search size={14} className="text-text-muted" />
-          <span className="flex-1 text-left">Search&hellip;</span>
-          <kbd className="text-2xs text-text-muted/50 border border-border rounded px-1 py-px font-sans leading-none">
-            &#8984;F
+          <Search size={14} className="group-hover:text-accent transition-colors" />
+          <span className="flex-1 text-left font-medium">Search anything&hellip;</span>
+          <kbd className="hidden sm:flex items-center gap-1 text-[10px] text-text-muted/60 bg-bg-surface border border-border/40 rounded-md px-1.5 py-0.5 font-sans leading-none shadow-sm">
+            <span className="text-xs">&#8984;</span>F
           </kbd>
         </button>
 
         {/* Icon button: History */}
-        <button className="w-[34px] h-[34px] rounded-full bg-bg-surface border border-border flex items-center justify-center text-text-muted hover:border-accent hover:text-text-primary transition-colors cursor-pointer">
+        <button className="w-9 h-9 rounded-xl bg-bg-surface border border-border/60 flex items-center justify-center text-text-muted hover:border-accent/40 hover:text-accent hover:shadow-sm transition-all cursor-pointer">
           <History size={16} />
         </button>
 
         {/* Icon button: Mail */}
-        <button className="w-[34px] h-[34px] rounded-full bg-bg-surface border border-border flex items-center justify-center text-text-muted hover:border-accent hover:text-text-primary transition-colors cursor-pointer">
+        <button className="w-9 h-9 rounded-xl bg-bg-surface border border-border/60 flex items-center justify-center text-text-muted hover:border-accent/40 hover:text-accent hover:shadow-sm transition-all cursor-pointer">
           <Mail size={16} />
         </button>
+
+        <div className="h-6 w-px bg-border/60 mx-1" />
 
         {/* Bug Report Widget */}
         <BugReportWidget />
@@ -94,22 +96,22 @@ export default function TopBar({ onOpenPalette, onOpenConflicts }) {
         {activeTimer && timerElapsed && (
           <button
             onClick={() => window.location.hash = '#/time'}
-            className="flex items-center gap-1.5 h-8 px-3 rounded border border-success/30 bg-success/10 hover:bg-success/15 transition-colors cursor-pointer"
+            className="flex items-center gap-2 h-9 px-3.5 rounded-xl border border-success/30 bg-success/5 hover:bg-success/10 transition-all cursor-pointer shadow-sm group"
             title="Timer running — click to open Time Tracking"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-            <Clock size={11} className="text-success" />
-            <span className="text-xs font-mono text-success">{timerElapsed}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+            <Clock size={13} className="text-success group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-bold font-mono text-success">{timerElapsed}</span>
           </button>
         )}
 
         {/* AI Assistant Button */}
         <button
           onClick={() => setAssistantOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-5 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 transition-all active:scale-[0.97] cursor-pointer"
         >
-          <Sparkles size={14} />
-          AI Assistant
+          <Sparkles size={15} />
+          <span>AI Assistant</span>
         </button>
 
         <AIAssistant open={assistantOpen} onClose={() => setAssistantOpen(false)} />
@@ -118,33 +120,33 @@ export default function TopBar({ onOpenPalette, onOpenConflicts }) {
         {hasConflicts ? (
           <button
             onClick={onOpenConflicts}
-            className="flex items-center gap-1.5 h-8 px-2.5 rounded border border-danger/30 bg-danger/10 hover:bg-danger/20 transition-colors cursor-pointer"
+            className="flex items-center gap-2 h-9 px-3 rounded-xl border border-danger/30 bg-danger/5 hover:bg-danger/10 transition-all cursor-pointer shadow-sm"
             title="Click to resolve sync conflicts"
           >
-            <AlertTriangle size={12} className="text-danger" />
-            <span className="text-xs text-danger hidden sm:inline font-medium">
-              Sync Issues ({conflicts.length})
+            <AlertTriangle size={14} className="text-danger" />
+            <span className="text-xs text-danger hidden lg:inline font-bold">
+              Issues ({conflicts.length})
             </span>
           </button>
         ) : (
           <div
-            className={`flex items-center gap-1.5 h-8 px-2.5 rounded border ${
+            className={`flex items-center gap-2 h-9 px-3 rounded-xl border transition-all ${
               pendingCount > 0
-                ? 'border-warning/30 bg-warning/10'
-                : 'border-border bg-bg-surface'
+                ? 'border-warning/30 bg-warning/5'
+                : 'border-border/60 bg-bg-elevated/20'
             }`}
           >
             {isSyncing ? (
-              <RefreshCw size={12} className="text-accent animate-spin" />
+              <RefreshCw size={13} className="text-accent animate-spin" />
             ) : pendingCount > 0 ? (
-              <CloudOff size={12} className="text-warning" />
+              <CloudOff size={13} className="text-warning" />
             ) : (
-              <span className="w-1.5 h-1.5 rounded-full bg-success" />
+              <div className="w-2 h-2 rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
             )}
 
-            <span className="text-xs text-text-muted hidden sm:inline">
+            <span className="text-[11px] font-bold text-text-muted/80 hidden lg:inline uppercase tracking-wider">
               {isSyncing
-                ? 'Syncing…'
+                ? 'Syncing'
                 : pendingCount > 0
                   ? `${pendingCount} pending`
                   : 'Synced'}
@@ -153,10 +155,10 @@ export default function TopBar({ onOpenPalette, onOpenConflicts }) {
             {pendingCount > 0 && !isSyncing && (
               <button
                 onClick={manualSync}
-                className="ml-0.5 text-text-muted hover:text-text-primary transition-colors"
+                className="ml-1 text-text-muted hover:text-accent transition-colors"
                 title="Sync now"
               >
-                <RefreshCw size={11} />
+                <RefreshCw size={12} />
               </button>
             )}
           </div>
