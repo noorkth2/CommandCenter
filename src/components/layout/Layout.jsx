@@ -52,6 +52,7 @@ function ConflictModalManager({ onRegisterOpen }) {
  */
 export default function Layout() {
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   // Ref to the ConflictModalManager's openNext function so TopBar can trigger it
   const openConflictRef = useRef(null);
 
@@ -81,6 +82,7 @@ export default function Layout() {
       <TopBar
         onOpenPalette={() => setPaletteOpen(true)}
         onOpenConflicts={handleOpenConflict}
+        onOpenAssistant={() => setAssistantOpen(true)}
       />
       <main className="main-content" id="main-content">
         <div className="p-8 max-w-[1400px] mx-auto">
@@ -88,6 +90,7 @@ export default function Layout() {
         </div>
       </main>
       <ChatbaseLoader />
+      <AIAssistant open={assistantOpen} onClose={() => setAssistantOpen(false)} />
       <ConflictModalManager onRegisterOpen={handleRegisterOpen} />
       <NotificationGenerator />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />

@@ -107,14 +107,12 @@ export default function TopBar({ onOpenPalette, onOpenConflicts }) {
 
         {/* AI Assistant Button */}
         <button
-          onClick={() => setAssistantOpen(true)}
+          onClick={onOpenAssistant}
           className="flex items-center gap-2 px-5 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/25 transition-all active:scale-[0.97] cursor-pointer"
         >
           <Sparkles size={15} />
           <span>AI Assistant</span>
         </button>
-
-        <AIAssistant open={assistantOpen} onClose={() => setAssistantOpen(false)} />
 
         {/* Sync status indicator — clickable when conflicts exist */}
         {hasConflicts ? (
@@ -162,6 +160,12 @@ export default function TopBar({ onOpenPalette, onOpenConflicts }) {
               </button>
             )}
           </div>
+        )}
+      </div>
+    </header>
+  );
+}
+   </div>
         )}
       </div>
     </header>
