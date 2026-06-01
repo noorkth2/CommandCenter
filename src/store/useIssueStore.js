@@ -75,13 +75,22 @@ export const useIssueStore = create((set, get) => ({
   // ─── CREATE ────────────────────────────────────────────────────────────────
 
   addIssue: async (payload) => {
+    // Sanitize empty string UUIDs/foreign keys to null to avoid Postgres constraint errors
+    const sanitizedPayload = { ...payload };
+    const fkFields = ['project_id', 'sprint_id', 'client_id', 'product_id'];
+    fkFields.forEach(fk => {
+      if (sanitizedPayload[fk] === '') {
+        sanitizedPayload[fk] = null;
+      }
+    });
+
     const tid = tempId();
-    set((s) => ({ issues: optimisticAdd(s.issues, { ...payload, status: payload.status ?? 'backlog' }, tid) }));
+    set((s) => ({ issues: optimisticAdd(s.issues, { ...sanitizedPayload, status: sanitizedPayload.status ?? 'backlog' }, tid) }));
 
     try {
       const result = await safeMutate(
-        { table: 'issues', op: 'upsert', payload: { ...payload, status: payload.status ?? 'backlog', id: tid } },
-        () => supabase.from('issues').insert(payload).select().single()
+        { table: 'issues', op: 'upsert', payload: { ...sanitizedPayload, status: sanitizedPayload.status ?? 'backlog', id: tid } },
+        () => supabase.from('issues').insert(sanitizedPayload).select().single()
       );
 
       if (result.offline) {
@@ -103,13 +112,22 @@ export const useIssueStore = create((set, get) => ({
   // ─── UPDATE ────────────────────────────────────────────────────────────────
 
   updateIssue: async (id, patch) => {
+    // Sanitize empty string UUIDs/foreign keys to null to avoid Postgres constraint errors
+    const sanitizedPatch = { ...patch };
+    const fkFields = ['project_id', 'sprint_id', 'client_id', 'product_id'];
+    fkFields.forEach(fk => {
+      if (sanitizedPatch[fk] === '') {
+        sanitizedPatch[fk] = null;
+      }
+    });
+
     const prev = get().issues.find((i) => i.id === id);
-    set((s) => ({ issues: optimisticUpdate(s.issues, id, { ...patch, updated_at: new Date().toISOString() }) }));
+    set((s) => ({ issues: optimisticUpdate(s.issues, id, { ...sanitizedPatch, updated_at: new Date().toISOString() }) }));
 
     try {
       const result = await safeMutate(
-        { table: 'issues', op: 'upsert', payload: { id, ...patch, updated_at: new Date().toISOString() } },
-        () => supabase.from('issues').update(patch).eq('id', id).select().single()
+        { table: 'issues', op: 'upsert', payload: { id, ...sanitizedPatch, updated_at: new Date().toISOString() } },
+        () => supabase.from('issues').update(sanitizedPatch).eq('id', id).select().single()
       );
 
       if (result.offline) {

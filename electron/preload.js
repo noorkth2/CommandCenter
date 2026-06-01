@@ -108,4 +108,10 @@ contextBridge.exposeInMainWorld('electron', {
   chatbase: {
     getToken: (user) => ipcRenderer.invoke('chatbase:get-token', user),
   },
+  /**
+   * App Metadata
+   */
+  app: {
+    version: () => ipcRenderer.invoke('app:version'),
+  },
 });

@@ -133,6 +133,31 @@ describe('useIssueStore', () => {
     expect(useIssueStore.getState().issues).toHaveLength(1);
   });
 
+  it('addIssue sanitizes empty string foreign keys to null', async () => {
+    mockSupabaseQuery.single.mockResolvedValue({
+      data: { id: 'real-2', title: 'Sanitized', project_id: null, sprint_id: null },
+      error: null,
+    });
+
+    const result = await useIssueStore.getState().addIssue({
+      title: 'Sanitized',
+      project_id: '',
+      sprint_id: '',
+      client_id: '',
+      product_id: '',
+    });
+
+    expect(result.data.project_id).toBeNull();
+    expect(result.data.sprint_id).toBeNull();
+    expect(mockSupabaseClient.from).toHaveBeenCalledWith('issues');
+    expect(mockSupabaseQuery.insert).toHaveBeenCalledWith(expect.objectContaining({
+      project_id: null,
+      sprint_id: null,
+      client_id: null,
+      product_id: null,
+    }));
+  });
+
   // ─── updateIssue ──────────────────────────────────────────────────────────
 
   it('updateIssue optimistically patches and replaces on success', async () => {
@@ -151,6 +176,20 @@ describe('useIssueStore', () => {
     await useIssueStore.getState().updateIssue('1', { title: 'Should not apply' });
     expect(useIssueStore.getState().issues[0].title).toBe('Original');
     expect(mockToast.error).toHaveBeenCalledWith('Update failed');
+  });
+
+  it('updateIssue sanitizes empty string foreign keys to null', async () => {
+    useIssueStore.setState({ issues: [{ id: '1', title: 'Issue', project_id: 'p-1', status: 'backlog' }] });
+    mockSupabaseQuery.single.mockResolvedValue({
+      data: { id: '1', title: 'Issue', project_id: null, sprint_id: null, status: 'backlog' },
+      error: null,
+    });
+
+    await useIssueStore.getState().updateIssue('1', { project_id: '', sprint_id: '' });
+    expect(mockSupabaseQuery.update).toHaveBeenCalledWith(expect.objectContaining({
+      project_id: null,
+      sprint_id: null,
+    }));
   });
 
   // ─── deleteIssue ──────────────────────────────────────────────────────────

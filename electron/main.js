@@ -386,6 +386,11 @@ function registerIpcHandlers() {
       return { data: { context, screenshot: null }, error: err.message };
     }
   });
+
+  // ── App Meta Info ───────────────────────────────────────────────
+  ipcMain.handle('app:version', () => {
+    return app.getVersion();
+  });
 }
 
 // Prevent multiple instances

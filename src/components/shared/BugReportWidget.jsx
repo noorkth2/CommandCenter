@@ -58,6 +58,8 @@ export default function BugReportWidget() {
     try {
       const payload = {
         ...formData,
+        project_id: formData.project_id || null,
+        sprint_id: formData.sprint_id || null,
         status: 'backlog',
         team: 'qa',
         environment: 'production',

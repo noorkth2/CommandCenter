@@ -88,6 +88,14 @@ export default function Sidebar() {
     }
   };
 
+  const [version, setVersion] = useState('2.2.4');
+
+  useEffect(() => {
+    if (window.electron?.app?.version) {
+      window.electron.app.version().then(setVersion).catch(() => {});
+    }
+  }, []);
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -99,15 +107,16 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
-      {/* Logo / Brand — compact */}
       {window.electron?.platform === 'darwin' ? (
-        <div className="flex flex-col items-center gap-2 py-6 px-4 flex-shrink-0 drag-region select-none" style={{ paddingLeft: '80px', paddingRight: '16px' }}>
-          <Logo className="w-7 h-7 flex-shrink-0" />
+        <div className="flex flex-col items-center gap-2 pt-14 pb-6 px-4 flex-shrink-0 drag-region select-none w-full">
+          <Logo className="w-10 h-10 flex-shrink-0" />
           <div className="text-center">
-            <span className="text-xs font-bold text-text-primary tracking-tight leading-none block whitespace-nowrap">
+            <span className="text-sm font-bold text-text-primary tracking-tight leading-none block whitespace-nowrap">
               CommandCenter
             </span>
-            <p className="text-[10px] text-text-muted font-medium leading-none mt-1 uppercase tracking-tighter">PM Hub</p>
+            <p className="text-[10px] text-text-muted font-medium leading-none mt-1.5 uppercase tracking-tighter">
+              PM Hub <span className="text-[9px] font-semibold text-accent/80 lowercase ml-1">v{version}</span>
+            </p>
           </div>
         </div>
       ) : (
@@ -117,7 +126,9 @@ export default function Sidebar() {
             <span className="text-xs font-bold text-text-primary tracking-tight leading-none block whitespace-nowrap">
               CommandCenter
             </span>
-            <p className="text-[10px] text-text-muted font-medium leading-none mt-1 uppercase tracking-tighter">PM Hub</p>
+            <p className="text-[10px] text-text-muted font-medium leading-none mt-1 uppercase tracking-tighter">
+              PM Hub <span className="text-[9px] font-semibold text-accent/80 lowercase ml-1">v{version}</span>
+            </p>
           </div>
         </div>
       )}
