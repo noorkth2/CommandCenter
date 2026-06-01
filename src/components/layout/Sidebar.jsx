@@ -88,7 +88,7 @@ export default function Sidebar() {
     }
   };
 
-  const [version, setVersion] = useState('2.2.4');
+  const [version, setVersion] = useState('2.2.5');
 
   useEffect(() => {
     if (window.electron?.app?.version) {

@@ -76,14 +76,14 @@ function generateLocalSummary(type, data) {
       return JSON.stringify((data || []).map(i => ({
         id: i.id,
         suggested_priority: i.priority || 'p2',
-        suggested_team: i.team || 'engineering',
+        suggested_team: (['backend', 'frontend', 'qa', 'ops', 'app'].includes(i.team) ? i.team : null) || 'backend',
         confidence: 0.8,
         reasoning: 'Local triage rule fallback'
       })));
     case 'triage_single':
       return JSON.stringify({
         suggested_priority: data.priority || 'p2',
-        suggested_team: data.team || 'engineering',
+        suggested_team: (['backend', 'frontend', 'qa', 'ops', 'app'].includes(data.team) ? data.team : null) || 'backend',
         confidence: 0.8,
         reasoning: 'Local triage rule fallback'
       });
@@ -394,7 +394,7 @@ ${JSON.stringify((issues || []).map(i => ({ id: i.id, title: i.title, descriptio
 
 For each issue, suggest:
 1. Suggested Priority (p0, p1, p2, p3)
-2. Suggested Team (engineering, design, qa, product, marketing, sales, hr, finance)
+2. Suggested Team — you MUST choose one of EXACTLY these values: backend, frontend, qa, ops, app
 3. Confidence (0.0 to 1.0)
 4. Reasoning (max 15 words)
 
@@ -404,7 +404,7 @@ Example:
   {
     "id": "uuid-here",
     "suggested_priority": "p1",
-    "suggested_team": "engineering",
+    "suggested_team": "backend",
     "confidence": 0.9,
     "reasoning": "Critical payment bug affecting users"
   }
@@ -418,7 +418,7 @@ Description: ${issue.description ?? 'No description provided'}
 
 Suggest:
 1. Suggested Priority (p0, p1, p2, p3)
-2. Suggested Team (backend, frontend, app)
+2. Suggested Team — you MUST choose one of EXACTLY these values: backend, frontend, qa, ops, app
 3. Confidence (0.0 to 1.0)
 4. Reasoning (max 15 words)
 

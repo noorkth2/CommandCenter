@@ -315,9 +315,10 @@ export default function Issues() {
     try {
       for (const result of triageResults) {
         if (selectedTriageIds.has(result.id)) {
+          const safeTeam = VALID_TEAMS.includes(result.suggested_team) ? result.suggested_team : undefined;
           await update(result.id, {
             priority: result.suggested_priority,
-            team: result.suggested_team,
+            ...(safeTeam ? { team: safeTeam } : {}),
           });
           successCount++;
         }
@@ -337,14 +338,18 @@ export default function Issues() {
 
   const isCritical = currentLabels.includes('critical');
 
+  const VALID_TEAMS = ['backend', 'frontend', 'qa', 'ops', 'app'];
+
   const handleAutoTriage = async () => {
     if (!watchedTitle) return toast.error('Please enter a title first');
     try {
       const result = await triageSingle({ title: watchedTitle, description: watchedDesc });
       if (result) {
         if (result.suggested_priority) setValue('priority', result.suggested_priority);
-        if (result.suggested_team) setValue('team', result.suggested_team);
-        toast.success(`AI Triage: Suggested ${result.suggested_team} (${result.suggested_priority})`);
+        // Only apply team if it's a valid DB value — AI can sometimes return invalid values
+        const safeTeam = VALID_TEAMS.includes(result.suggested_team) ? result.suggested_team : null;
+        if (safeTeam) setValue('team', safeTeam);
+        toast.success(`AI Triage: Suggested ${safeTeam ?? 'no team'} (${result.suggested_priority})`);
       }
     } catch (err) {
       toast.error('AI Triage failed: ' + err.message);
