@@ -5,7 +5,6 @@ import { useSync } from '../../lib/SyncContext';
 import { useTimeTrackingStore } from '../../store/useTimeTrackingStore';
 import NotificationBell from '../notifications/NotificationBell';
 import BugReportWidget from '../shared/BugReportWidget';
-import AIAssistant from '../shared/AIAssistant';
 
 const PAGE_TITLES = {
   '/dashboard': { title: 'Dashboard', subtitle: 'Overview of your PM operations' },
@@ -22,14 +21,13 @@ const PAGE_TITLES = {
   '/settings': { title: 'Settings', subtitle: 'Configure integrations and preferences' },
 };
 
-export default function TopBar({ onOpenPalette, onOpenConflicts }) {
+export default function TopBar({ onOpenPalette, onOpenConflicts, onOpenAssistant }) {
   const { pathname } = useLocation();
   const { pendingCount, isSyncing, conflicts, manualSync } = useSync();
   const activeTimer = useTimeTrackingStore((s) => s.activeTimer);
   const pageInfo = PAGE_TITLES[pathname] ?? { title: 'CommandCenter', subtitle: '' };
   const hasConflicts = conflicts.length > 0;
 
-  const [assistantOpen, setAssistantOpen] = useState(false);
   const [timerElapsed, setTimerElapsed] = useState('');
   useEffect(() => {
     if (!activeTimer) { setTimerElapsed(''); return; }
@@ -160,12 +158,6 @@ export default function TopBar({ onOpenPalette, onOpenConflicts }) {
               </button>
             )}
           </div>
-        )}
-      </div>
-    </header>
-  );
-}
-   </div>
         )}
       </div>
     </header>
