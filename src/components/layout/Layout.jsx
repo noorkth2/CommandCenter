@@ -6,6 +6,7 @@ import ConflictResolutionModal from '../shared/ConflictResolutionModal';
 import CommandPalette from '../shared/CommandPalette';
 import NotificationGenerator from '../notifications/NotificationGenerator';
 import ChatbaseLoader from '../shared/ChatbaseLoader';
+import AIAssistant from '../shared/AIAssistant';
 import { useSync } from '../../lib/SyncContext';
 
 /**
