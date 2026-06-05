@@ -14,6 +14,7 @@ import {
   Clock,
   ArrowRight,
   FolderOpen,
+  Edit2,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -66,6 +67,40 @@ export default function Sprints() {
   const [selectedSprintId, setSelectedSprintId] = useState('');
   const [moveDestination, setMoveDestination] = useState('backlog'); // backlog | sprint_id
   const [plannedPoints, setPlannedPoints] = useState(0);
+
+  const [editingSprintId, setEditingSprintId] = useState(null);
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
+  const [savingDates, setSavingDates] = useState(false);
+
+  const handleStartEditDates = (sprint) => {
+    setEditingSprintId(sprint.id);
+    setEditStartDate(sprint.start_date || '');
+    setEditEndDate(sprint.end_date || '');
+  };
+
+  const handleCancelEditDates = () => {
+    setEditingSprintId(null);
+    setEditStartDate('');
+    setEditEndDate('');
+  };
+
+  const handleSaveDates = async (sprintId) => {
+    setSavingDates(true);
+    try {
+      await updateSprint(sprintId, {
+        start_date: editStartDate || null,
+        end_date: editEndDate || null,
+      });
+      toast.success('Sprint dates updated');
+      setEditingSprintId(null);
+      await fetchSprints();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSavingDates(false);
+    }
+  };
 
   const {
     register,
@@ -482,6 +517,63 @@ export default function Sprints() {
                             <span>Issues Assigned:</span>
                             <span className="font-medium text-text-primary">{sprintIssues.length}</span>
                           </div>
+                          {sprint.status === 'upcoming' && editingSprintId === sprint.id ? (
+                            <div className="space-y-1.5 pt-2 border-t border-border/40 mt-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] text-text-muted">Start Date:</span>
+                                <input
+                                  type="date"
+                                  value={editStartDate}
+                                  onChange={(e) => setEditStartDate(e.target.value)}
+                                  className="bg-bg-elevated border border-border rounded px-1.5 py-0.5 text-xs text-text-primary focus:outline-none focus:border-accent w-32"
+                                />
+                              </div>
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] text-text-muted">End Date:</span>
+                                <input
+                                  type="date"
+                                  value={editEndDate}
+                                  onChange={(e) => setEditEndDate(e.target.value)}
+                                  className="bg-bg-elevated border border-border rounded px-1.5 py-0.5 text-xs text-text-primary focus:outline-none focus:border-accent w-32"
+                                />
+                              </div>
+                              <div className="flex justify-end gap-1.5 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={handleCancelEditDates}
+                                  className="text-[10px] text-text-secondary hover:text-text-primary px-2 py-0.5 rounded border border-border bg-bg-surface transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveDates(sprint.id)}
+                                  className="text-[10px] bg-accent text-white hover:bg-accent-hover px-2 py-0.5 rounded font-medium transition-colors"
+                                  disabled={savingDates}
+                                >
+                                  {savingDates ? 'Saving...' : 'Save'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between items-center group">
+                              <span>Dates:</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium text-text-primary">
+                                  {sprint.start_date || '—'} to {sprint.end_date || '—'}
+                                </span>
+                                {sprint.status === 'upcoming' && (
+                                  <button
+                                    onClick={() => handleStartEditDates(sprint)}
+                                    className="text-text-muted hover:text-accent p-0.5 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                    title="Edit Dates"
+                                  >
+                                    <Edit2 size={10} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );

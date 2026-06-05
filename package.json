@@ -1,6 +1,6 @@
 {
   "name": "commandcenter",
-  "version": "2.2.7",
+  "version": "2.2.8",
   "description": "PM Command Center — unified productivity tool for teams",
   "main": "electron/main.js",
   "homepage": "./",
